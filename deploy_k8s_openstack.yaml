@@ -45,10 +45,6 @@
     retries: 30
     delay: 10
 
-  - name: DEBUG
-    debug:
-     msg: "result {{result }}"
-
   - name: Add VM to inventory
     add_host:
       name: "{{ item.server.name }}"
