@@ -20,7 +20,11 @@
      - icmp
 
   - name: Launch a VM
+<<<<<<< HEAD
     os_server:
+=======
+     os_server:
+>>>>>>> afe2c9f4c09b04223d28bd35592954f12d5e3832
       name: "{{ item.name }}"
       image: "{{ item.image }}"
       key_name: "{{ item.key_name }}"
@@ -30,6 +34,7 @@
       security_groups: "{{ item.security_group }}"
       meta: "group={{ item.group }}"
       auto_ip: no
+<<<<<<< HEAD
     register: server
     with_items:
       - { name: 'kube_master', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S', key_name: 'Lisa',  group: 'master' }
@@ -48,6 +53,12 @@
   - name: DEBUG
     debug:
      msg: "result {{result }}"
+=======
+    register: my_vm
+    with_items:
+      - { name: 'kube_master', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'k8s-nodes', key_name: 'Lisa',  group: 'master' }
+      - { name: 'kube_node1', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'k8s-nodes', key_name: 'Lisa',  group: 'node' }
+>>>>>>> afe2c9f4c09b04223d28bd35592954f12d5e3832
 
   - name: Add VM to inventory
     add_host:
