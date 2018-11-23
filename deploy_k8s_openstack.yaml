@@ -1,15 +1,16 @@
 - name: Launch a compute instance
   hosts: localhost
   tasks:
+
   - name: Create the K8S security group
     os_security_group:
       state: present
-      name: K8S
+      name: K8S-SG
       description: security group for K8S cluster
 
   - name: Add new rule to the K8S Security Group allowing any protocol
     os_security_group_rule:
-      security_group: K8S
+      security_group: K8S-SG
       protocol: "{{ item }}"
       port_range_min: -1
       port_range_max: -1
@@ -32,13 +33,26 @@
       auto_ip: no
     register: server
     with_items:
-      - { name: 'kube_master', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S', key_name: 'Lisa',  group: 'master' }
-      - { name: 'kube_node1', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_master', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'master' }
+      - { name: 'k8s_node01', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node02', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node03', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node04', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node05', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node06', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node07', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node08', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node09', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node10', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node11', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node12', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node13', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node14', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
+      - { name: 'k8s_node15', image: 'ubuntu_18.04', flavor: 'cldareapd.4cores4GB25GB', security_group: 'K8S-SG', key_name: 'Lisa',  group: 'node' }
 
   - name: Wait for SSH on the Instance
     command: >
-      ssh -oBatchMode=yes -oStrictHostKeyChecking=no
-      ubuntu@{{item.server.private_v4}} true
+      ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@{{item.server.private_v4}} true
     with_items: "{{ server.results }}"
     register: result
     until: result is success
@@ -51,6 +65,7 @@
       groups: "{{ item.server.metadata.group }}"
       ansible_host: "{{ item.server.private_v4 }}"
     with_items: "{{ server.results }}"
+
 
 - import_playbook: deploy_k8s.yaml
 
