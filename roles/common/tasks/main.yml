@@ -7,11 +7,11 @@
   become_method: sudo
 
 # This may require a reboot
-- name: Update all packages to the latest version
-  apt:
-    upgrade: dist
-  become: yes
-  become_method: sudo
+#- name: Update all packages to the latest version
+#  apt:
+#    upgrade: dist
+#  become: yes
+#  become_method: sudo
   
 - name: install basic packages
   apt: package={{ item }} update_cache=yes
