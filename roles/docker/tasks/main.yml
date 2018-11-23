@@ -12,12 +12,14 @@
     name: "{{ item }}"
     state: present
     update_cache: yes
+    force: yes
   with_items:
     - apt-transport-https
     - ca-certificates
     - curl
     - software-properties-common
-    - docker-ce
+    - docker-ce=18.06.0~ce~3-0~ubuntu
+
 
 - name: add remote user to group docker
   command: usermod -aG docker {{ansible_user}}
