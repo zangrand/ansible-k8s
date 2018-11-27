@@ -3,19 +3,8 @@
   when: init_cluster and started_kubelet
   become: yes
   copy:
-    src: {{ lookup('env', 'OS_CACERT') }}
-
-  #get_url:
-  #  url: https://raw.githubusercontent.com/zangrand/ansible-k8s/master/roles/auth/keystone/files/infn_ca.pem
+    src: "{{ lookup('env', 'OS_CACERT') }}"
     dest: /etc/kubernetes/pki/ca_cert.pem
-
-
-#- name: Copy the CloudVeneto CA cert to /etc/kubernetes/pki/
-#  when: init_cluster and started_kubelet
-#  become: yes
-#  get_url:
-#    url: https://raw.githubusercontent.com/zangrand/ansible-k8s/master/roles/auth/keystone/files/tls-ca-bundle.pem
-#    dest: /etc/kubernetes/pki/
 
 
 - name: Copy the webhook to /etc/kubernetes/pki/
@@ -45,9 +34,7 @@
         --from-literal=os_auth_url={{ lookup('env', 'OS_AUTH_URL') }}
         --from-file=cert-file=/etc/kubernetes/pki/apiserver.crt \
         --from-file=key-file=/etc/kubernetes/pki/apiserver.key \
-        --from-file=os_cacert=/etc/kubernetes/pki/ca_cert.pem \
-        #--from-file=infn_ca.pem=/etc/kubernetes/pki/tls-ca-bundle.pem \
-        #--from-file=tls-ca-bundle.pem=/etc/kubernetes/pki/tls-ca-bundle.pem \
+        --from-file=ca_file.pem=/etc/kubernetes/pki/ca_file.pem \
         -n kube-system
   register: create_result
 
