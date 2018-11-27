@@ -36,7 +36,7 @@ spec:
             - --keystone-url
             - "$(OS_AUTH_URL)"
             - --keystone-ca-file
-            - "{{ ''.join(('/etc/keystone/pki/', lookup('env', 'OS_CACERT') | basename)) }}"
+            - /etc/keystone/pki/{{ ca_cert_file }}
           volumeMounts:
             - mountPath: /etc/keystone/pki
               name: keystone-auth-certs
