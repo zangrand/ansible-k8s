@@ -36,7 +36,7 @@ spec:
             - --keystone-url
             - "$(OS_AUTH_URL)"
             - --keystone-ca-file
-            - /etc/keystone/pki/ca_file.pem
+            - /etc/keystone/pki/ca_cert.pem
           volumeMounts:
             - mountPath: /etc/keystone/pki
               name: keystone-auth-certs

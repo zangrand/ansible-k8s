@@ -34,7 +34,7 @@
         --from-literal=os_auth_url={{ lookup('env', 'OS_AUTH_URL') }}
         --from-file=cert-file=/etc/kubernetes/pki/apiserver.crt \
         --from-file=key-file=/etc/kubernetes/pki/apiserver.key \
-        --from-file=ca_file.pem=/etc/kubernetes/pki/ca_file.pem \
+        --from-file=ca_cert.pem=/etc/kubernetes/pki/ca_cert.pem \
         -n kube-system
   register: create_result
 
