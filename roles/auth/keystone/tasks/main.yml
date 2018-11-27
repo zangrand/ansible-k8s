@@ -1,4 +1,11 @@
 ---
+- name: Copy the INFN CA cert to /etc/kubernetes/pki/
+  when: init_cluster and started_kubelet
+  become: yes
+  get_url:
+    url: https://raw.githubusercontent.com/zangrand/ansible-k8s/master/roles/auth/keystone/files/infn_ca.pem
+    dest: /etc/kubernetes/pki/
+
 
 - name: Copy the CloudVeneto CA cert to /etc/kubernetes/pki/
   when: init_cluster and started_kubelet
@@ -35,7 +42,8 @@
         --from-literal=os_auth_url={{ lookup('env', 'OS_AUTH_URL') }}
         --from-file=cert-file=/etc/kubernetes/pki/apiserver.crt \
         --from-file=key-file=/etc/kubernetes/pki/apiserver.key \
-        --from-file=ca-file.pem=/etc/kubernetes/pki/tls-ca-bundle.pem \
+        --from-file=infn_ca.pem=/etc/kubernetes/pki/tls-ca-bundle.pem \
+        --from-file=tls-ca-bundle.pem=/etc/kubernetes/pki/tls-ca-bundle.pem \
         -n kube-system
   register: create_result
 
