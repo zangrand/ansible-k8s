@@ -25,6 +25,11 @@ spec:
                 secretKeyRef:
                   name: keystone-auth-certs
                   key: os_auth_url
+            - name: CACERT_FILE
+              valueFrom:
+                secretKeyRef:
+                  name: keystone-auth-certs
+                  key: os_cacert
           args:
             - ./bin/k8s-keystone-auth
             - --tls-cert-file
@@ -36,7 +41,7 @@ spec:
             - --keystone-url
             - "$(OS_AUTH_URL)"
             - --keystone-ca-file
-            - "/etc/keystone/pki/$(CACERT_FILE)"
+            - "$(CACERT_FILE)"
           volumeMounts:
             - mountPath: /etc/keystone/pki
               name: keystone-auth-certs
