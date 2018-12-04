@@ -20,6 +20,8 @@
     - docker
     - kubeadm
     - master
+    - prometheus
+    - spark
 
 - name: Install nodes
   remote_user: ubuntu

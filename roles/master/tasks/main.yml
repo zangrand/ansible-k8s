@@ -18,10 +18,6 @@
   --user=kubelet \
   --group=system:serviceaccounts"
 
-- name: taint master node
-  when: init_cluster
-  command: kubectl --kubeconfig /etc/kubernetes/admin.conf taint nodes --all node-role.kubernetes.io/master-
-
 - name: install flannel pod network
   when: init_cluster
   command: kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
@@ -43,37 +39,6 @@
     group: "{{ ansible_user }}"
     mode: 0755
     remote_src: True
-
-- name: Clone prometheus-operator repo
-  become: no
-  git:
-    repo: https://github.com/coreos/prometheus-operator
-    dest: ./prometheus-operator
-    update: yes
-    force: yes
-
-- name: Set the NodePort to the Grafana service configuration
-  get_url:
-    url: https://raw.githubusercontent.com/zangrand/ansible-k8s/master/k8s/grafana-service.yaml
-    dest: prometheus-operator/contrib/kube-prometheus/manifests/
-
-- name: Set the NodePort to the Alertmanager service configuration
-  get_url:
-    url: https://raw.githubusercontent.com/zangrand/ansible-k8s/master/k8s/alertmanager-service.yaml
-    dest: prometheus-operator/contrib/kube-prometheus/manifests/
-
-- name: Set the NodePort to the Prometheus service configuration
-  get_url:
-    url: https://raw.githubusercontent.com/zangrand/ansible-k8s/master/k8s/prometheus-service.yaml
-    dest: prometheus-operator/contrib/kube-prometheus/manifests/
-
-- name: Clone spark-on-k8s-operator repo
-  become: no
-  git:
-    repo: https://github.com/GoogleCloudPlatform/spark-on-k8s-operator.git
-    dest: ./spark-on-k8s-operator
-    update: yes
-    force: yes
 
 - name: Enable and restart kubelet engine
   systemd:
@@ -103,28 +68,12 @@
   retries: 5
   delay: 2
 
-- name: Deploy Prometheus
+- name: Copy the OS key cert to /etc/kubernetes/pki/
   when: init_cluster and started_kubelet
-  command: |
-    kubectl --kubeconfig={{ kubeadmin_config }} \
-        apply -f prometheus-operator/contrib/kube-prometheus/manifests
-  register: create_result
-  until: create_result.rc == 0
-  retries: 5
-  delay: 2
-
-- name: Deploy the Spark operator
-  when: init_cluster and started_kubelet
-  command: |
-    kubectl --kubeconfig={{ kubeadmin_config }} apply -f {{ item }}
-  with_items:
-     - "spark-on-k8s-operator/manifest/spark-rbac.yaml"
-     - "spark-on-k8s-operator/manifest/spark-operator-rbac.yaml"
-     - "spark-on-k8s-operator/manifest/spark-operator-with-metrics.yaml"
-  register: create_result
-  until: create_result.rc == 0
-  retries: 5
-  delay: 2
+  become: yes
+  copy:
+    src: "{{ OS_KEY_CERT }}"
+    dest: /etc/kubernetes/pki/key_cert.pem
 
 - name: Copy the OS CA cert to /etc/kubernetes/pki/
   when: init_cluster and started_kubelet
@@ -132,13 +81,6 @@
   copy:
     src: "{{ lookup('env', 'OS_CACERT') }}"
     dest: /etc/kubernetes/pki/ca_cert.pem
-
-- name: Copy the OS key cert to /etc/kubernetes/pki/
-  when: init_cluster and started_kubelet
-  become: yes
-  copy:
-    src: "{{ OS_KEY_CERT }}"
-    dest: /etc/kubernetes/pki/key_cert.pem
 
 - name: Calculate the K8S CA CERT HASH
   when: init_cluster and started_kubelet

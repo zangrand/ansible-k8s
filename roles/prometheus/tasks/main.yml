@@ -1,0 +1,34 @@
+---
+- name: Clone prometheus-operator repo
+  become: no
+  git:
+    repo: https://github.com/coreos/prometheus-operator
+    dest: ./prometheus-operator
+    update: yes
+    force: yes
+
+- name: Set the NodePort to the Grafana service configuration
+  get_url:
+    url: https://raw.githubusercontent.com/zangrand/ansible-k8s/master/k8s/grafana-service.yaml
+    dest: prometheus-operator/contrib/kube-prometheus/manifests/
+
+- name: Set the NodePort to the Alertmanager service configuration
+  get_url:
+    url: https://raw.githubusercontent.com/zangrand/ansible-k8s/master/k8s/alertmanager-service.yaml
+    dest: prometheus-operator/contrib/kube-prometheus/manifests/
+
+- name: Set the NodePort to the Prometheus service configuration
+  get_url:
+    url: https://raw.githubusercontent.com/zangrand/ansible-k8s/master/k8s/prometheus-service.yaml
+    dest: prometheus-operator/contrib/kube-prometheus/manifests/
+
+- name: Deploy Prometheus
+  when: init_cluster and started_kubelet
+  command: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \
+        apply -f prometheus-operator/contrib/kube-prometheus/manifests
+  register: create_result
+  until: create_result.rc == 0
+  retries: 5
+  delay: 2
+

@@ -1,0 +1,23 @@
+---
+
+- name: Clone spark-on-k8s-operator repo
+  become: no
+  git:
+    repo: https://github.com/GoogleCloudPlatform/spark-on-k8s-operator.git
+    dest: ./spark-on-k8s-operator
+    update: yes
+    force: yes
+
+- name: Deploy the Spark operator
+  when: init_cluster and started_kubelet
+  command: |
+    kubectl --kubeconfig={{ kubeadmin_config }} apply -f {{ item }}
+  with_items:
+     - "spark-on-k8s-operator/manifest/spark-rbac.yaml"
+     - "spark-on-k8s-operator/manifest/spark-operator-rbac.yaml"
+     - "spark-on-k8s-operator/manifest/spark-operator-with-metrics.yaml"
+  register: create_result
+  until: create_result.rc == 0
+  retries: 5
+  delay: 2
+

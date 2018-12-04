@@ -1,4 +1,11 @@
 ---
+- name: Copy the OS CA cert to /etc/kubernetes/pki/
+  when: init_cluster and started_kubelet
+  become: yes
+  copy:
+    src: "{{ lookup('env', 'OS_CACERT') }}"
+    dest: /etc/kubernetes/pki/ca_cert.pem
+
 
 - name: Copy the webhook to /etc/kubernetes/pki/
   when: init_cluster and started_kubelet
