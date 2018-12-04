@@ -155,7 +155,6 @@
         --from-literal=OS_PROJECT_ID={{ lookup('env', 'OS_PROJECT_ID') }} \
         --from-literal=OS_PROJECT_NAME={{ lookup('env', 'OS_PROJECT_NAME') }} \
         --from-literal=OS_USER_DOMAIN_NAME={{ lookup('env', 'OS_USER_DOMAIN_NAME') }} \
-        --from-literal=OS_CACERT="/etc/kubernetes/pki/os_ca_cert.pem" \
         --from-literal=OS_USERNAME={{ lookup('env', 'OS_USERNAME') }} \
         --from-literal=OS_PASSWORD={{ lookup('env', 'OS_PASSWORD') }} \
         --from-literal=OS_INTERFACE={{ lookup('env', 'OS_INTERFACE') }} \
@@ -166,6 +165,7 @@
         --from-literal=OS_SECURITY_GROUP={{ OS_SECURITY_GROUP }} \
         --from-literal=OS_KEY_NAME={{ OS_KEY_NAME }} \
         --from-literal=OS_KEY_CERT="/etc/kubernetes/pki/os_key_cert.pem" \
+        --from-literal=OS_CACERT="/etc/kubernetes/pki/os_ca_cert.pem" \
         --from-literal=K8S_MASTER_HOST={{ hostvars[groups['master'][0]]['ansible_host'] }} \
         --from-literal=K8S_CA_CERT_HASH={{ k8s_ca_cert_hash.stdout }} \
         --from-file=os_ca_cert.pem="/etc/kubernetes/pki/ca_cert.pem" \

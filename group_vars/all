@@ -15,8 +15,15 @@ enable_dashboard: yes
 
 enable_metrics: yes
 
-OS_VM_NAME: node_test
-OS_IMAGE: ubuntu_18.04
-OS_FLAVOR: m1.xlarge
+
+OS_MASTER_NAME: master
+OS_MASTER_IMAGE: ubuntu_18.04
+OS_MASTER_FLAVOR: m1.xlarge
+
+OS_NODE_NAME: node_test
+OS_NODE_IMAGE: ubuntu_18.04
+OS_NODE_FLAVOR: m1.xlarge
+
 OS_SECURITY_GROUP: K8S-SG
 OS_KEY_NAME: Lisa
+OS_KEY_CERT: /home/ubuntu/lisa_openstack.pem 
