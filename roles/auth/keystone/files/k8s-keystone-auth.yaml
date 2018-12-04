@@ -47,6 +47,11 @@ spec:
       - name: keystone-auth-certs
         secret:
           secretName: keystone-auth-certs
+      tolerations:
+        - key: "node-role.kubernetes.io/master"
+          effect: "NoSchedule"
+          operator: "Exists"
+
 ---
 kind: Service
 apiVersion: v1
