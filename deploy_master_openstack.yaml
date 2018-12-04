@@ -1,0 +1,65 @@
+- name: Launch a compute instance
+  hosts: localhost
+
+  tasks:
+
+  - name: Create the K8S security group
+    os_security_group:
+      state: present
+      name: K8S-SG
+      description: security group for K8S cluster
+
+  - name: Add new rule to the K8S Security Group allowing any protocol
+    os_security_group_rule:
+      security_group: K8S-SG
+      protocol: "{{ item }}"
+      port_range_min: -1
+      port_range_max: -1
+      remote_ip_prefix: 0.0.0.0/0
+    with_items:
+     - tcp
+     - udp
+     - icmp
+
+  - name: Launch a VM
+    os_server:
+      name: "{{ item.name }}"
+      image: "{{ item.image }}"
+      key_name: "{{ item.key_name }}"
+      availability_zone: nova
+      flavor: "{{ item.flavor}}"
+      state: present
+      security_groups: "{{ item.security_group }}"
+      meta: "group={{ item.group }}"
+      auto_ip: no
+    register: server
+    with_items:
+      - { name: 'master', image: "{{ OS_MASTER_IMAGE }}", flavor: "{{ OS_MASTER_FLAVOR }}", security_group: "{{ OS_SECURITY_GROUP }}", key_name: "{{ OS_KEY_NAME }}", group: 'master' }
+
+  - name: Wait for SSH on the Instance
+    command: >
+      ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@{{item.server.private_v4}} true
+    with_items: "{{ server.results }}"
+    register: result
+    until: result is success
+    retries: 30
+    delay: 10
+
+  - name: Add VM to inventory
+    add_host:
+      name: "{{ item.server.name }}"
+      groups: "{{ item.server.metadata.group }}"
+      ansible_host: "{{ item.server.private_v4 }}"
+    with_items: "{{ server.results }}"
+
+
+- import_playbook: deploy_k8s.yaml
+
+
+- name: Install Keystone authentication webhook
+  hosts: master
+  remote_user: ubuntu
+  become: yes
+  become_method: sudo
+  roles:
+    - auth/keystone
