@@ -126,3 +126,36 @@
   retries: 5
   delay: 2
 
+ - name: Calculate the K8S CA CERT HASH
+  when: init_cluster and started_kubelet
+  command: |
+    openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d ' ' -f1
+  register: k8s_ca_cert_hash
+
+- name: Create the secret for os-k8s-node
+  when: init_cluster and started_kubelet
+  become: yes
+  command: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \
+        create secret generic os-k8s-node \
+        --from-literal=OS_AUTH_URL={{ lookup('env', 'OS_AUTH_URL') }} \
+        --from-literal=OS_PROJECT_ID={{ lookup('env', 'OS_PROJECT_ID') }} \
+        --from-literal=OS_PROJECT_NAME={{ lookup('env', 'OS_PROJECT_NAME') }} \
+        --from-literal=OS_USER_DOMAIN_NAME={{ lookup('env', 'OS_USER_DOMAIN_NAME') }} \
+        --from-literal=OS_CACERT="/etc/kubernetes/pki/os_ca_cert.pem" \
+        --from-literal=OS_USERNAME={{ lookup('env', 'OS_USERNAME') }} \
+        --from-literal=OS_PASSWORD={{ lookup('env', 'OS_PASSWORD') }} \
+        --from-literal=OS_INTERFACE={{ lookup('env', 'OS_INTERFACE') }} \
+        --from-literal=OS_IDENTITY_API_VERSION={{ lookup('env', 'OS_IDENTITY_API_VERSION') }} \
+        --from-literal=OS_VM_NAME={{ lookup('env', 'OS_VM_NAME') }} \
+        --from-literal=OS_IMAGE={{ lookup('env', 'OS_IMAGE') }} \
+        --from-literal=OS_FLAVOR={{ lookup('env', 'OS_FLAVOR') }} \
+        --from-literal=OS_SECURITY_GROUP={{ lookup('env', 'OS_SECURITY_GROUP') }} \
+        --from-literal=OS_KEY_NAME={{ lookup('env', 'OS_KEY_NAME') }} \
+        --from-literal=K8S_MASTER_HOST={{ hostvars[{{ groups['master'] }}]['ansible_host'] }} \
+        --from-literal=K8S_CA_CERT_HASH=k8s_ca_cert_hash.stdout \
+        --from-file=os_ca_cert.pem={{ lookup('env', 'OS_CACERT') }} \
+        -n kube-system
+  register: create_result
+
+
