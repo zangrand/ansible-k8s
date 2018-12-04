@@ -8,6 +8,6 @@
 
 - name: install basic packages
   package: 
-    name: ['jq', 'tree', 'python-yaml', 'git', 'apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common']
+    name: ['tree', 'python-yaml', 'git', 'apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common']
   become: yes
   become_method: sudo
