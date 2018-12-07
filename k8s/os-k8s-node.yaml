@@ -1,0 +1,122 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: os-k8s-node
+  namespace: kube-system
+spec:
+  parallelism: 8
+  template:
+    metadata:
+      labels:
+        app: os-k8s-node 
+    spec:
+      containers:
+      - name: os-k8s-node
+        image: zangrand/os-k8s-node:latest
+        ports:
+        - name: ssh
+          containerPort: 22
+        env:
+        - name: GET_HOSTS_FROM
+          value: env
+        - name: K8S_MASTER_HOST
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: K8S_MASTER_HOST
+        - name: K8S_CA_CERT_HASH
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: K8S_CA_CERT_HASH
+        - name:  OS_AUTH_URL
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_AUTH_URL
+        - name: OS_PROJECT_ID
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_PROJECT_ID
+        - name: OS_PROJECT_NAME
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_PROJECT_NAME
+        - name: OS_USER_DOMAIN_NAME
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_USER_DOMAIN_NAME
+        - name: OS_CACERT
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_CACERT
+        - name: OS_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_USERNAME
+        - name: OS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_PASSWORD
+        - name: OS_INTERFACE
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_INTERFACE
+        - name: OS_IDENTITY_API_VERSION
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_IDENTITY_API_VERSION
+        - name: OS_VM_NAME
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_VM_NAME
+        - name: OS_IMAGE
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_IMAGE
+        - name: OS_FLAVOR
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_FLAVOR
+        - name: OS_SECURITY_GROUP
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_SECURITY_GROUP
+        - name: OS_KEY_NAME
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_KEY_NAME
+        - name: OS_KEY_CERT
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_KEY_CERT
+        volumeMounts:
+          - mountPath: /etc/kubernetes/pki
+            name: os-k8s-node
+            readOnly: true
+      volumes:
+      - name: os-k8s-node
+        secret:
+          secretName: os-k8s-node
+      tolerations:
+        - key: "node-role.kubernetes.io/master"
+          effect: "NoSchedule"
+          operator: "Exists"
+      restartPolicy: OnFailure
+
+
