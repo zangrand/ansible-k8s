@@ -7,7 +7,7 @@
 - name: kubeadm init with pre generated token
   when: reset_cluster is succeeded
   shell: |
-    kubeadm init --pod-network-cidr {{ flannel_subnet }} --token {{ kubeadm_token }}
+    kubeadm init --pod-network-cidr {{ flannel_subnet }} --token {{ kubeadm_token }} --token-ttl 0
   register: init_cluster
 
 - name: allow permissive RBAC rules
