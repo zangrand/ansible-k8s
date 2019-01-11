@@ -9,13 +9,15 @@
       key_name: "{{ item.key_name }}"
       availability_zone: nova
       flavor: "{{ item.flavor}}"
+      network: "{{ item.network}}"
       state: present
       security_groups: "{{ item.security_group }}"
       meta: "group={{ item.group }}"
       auto_ip: no
+      reuse_ips: no
     register: server
     with_items:
-      - { name: "{{ lookup('env', 'OS_VM_NAME') }}", image: "{{ lookup('env', 'OS_IMAGE') }}", flavor: "{{ lookup('env', 'OS_FLAVOR') }}", security_group: "{{ lookup('env', 'OS_SECURITY_GROUP') }}", key_name: "{{ lookup('env', 'OS_KEY_NAME') }}",  group: 'node' }
+            - { name: "{{ lookup('env', 'OS_VM_NAME') }}", image: "{{ lookup('env', 'OS_IMAGE') }}", flavor: "{{ lookup('env', 'OS_FLAVOR') }}", security_group: "{{ lookup('env', 'OS_SECURITY_GROUP') }}", key_name: "{{ lookup('env', 'OS_KEY_NAME') }}", network: "{{ lookup('env', 'OS_NETWORK') }}", group: 'node' }
 
   - name: Wait for SSH on the Instance
     command: >

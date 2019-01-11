@@ -52,7 +52,7 @@
   when: init_cluster and started_kubelet and enable_dashboard
   command: |
     kubectl --kubeconfig={{ kubeadmin_config }} \
-        apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+        apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
   register: create_result
   until: create_result.rc == 0
   retries: 5
@@ -104,6 +104,7 @@
         --from-literal=OS_VM_NAME={{ OS_NODE_NAME }} \
         --from-literal=OS_IMAGE={{ OS_NODE_IMAGE }} \
         --from-literal=OS_FLAVOR={{ OS_NODE_FLAVOR }} \
+        --from-literal=OS_NETWORK={{ OS_NETWORK }} \
         --from-literal=OS_SECURITY_GROUP={{ OS_SECURITY_GROUP }} \
         --from-literal=OS_KEY_NAME={{ OS_KEY_NAME }} \
         --from-literal=OS_KEY_CERT="/etc/kubernetes/pki/os_key_cert.pem" \
