@@ -35,7 +35,7 @@
       reuse_ips: no
     register: server
     with_items:
-            - { name: 'master', image: "{{ OS_MASTER_IMAGE }}", flavor: "{{ OS_MASTER_FLAVOR }}", security_group: "{{ OS_SECURITY_GROUP }}", key_name: "{{ OS_KEY_NAME }}", network: "{{ OS_NETWORK }}", group: 'master' }
+            - { name: "{{ OS_MASTER_NAME }}", image: "{{ OS_MASTER_IMAGE }}", flavor: "{{ OS_MASTER_FLAVOR }}", security_group: "{{ OS_SECURITY_GROUP }}", key_name: "{{ OS_KEY_NAME }}", network: "{{ OS_NETWORK }}", group: 'master' }
 
   - name: Wait for SSH on the Instance
     command: >
