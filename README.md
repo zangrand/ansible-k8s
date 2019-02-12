@@ -1,16 +1,17 @@
 # Deployment of a Kubernetes cluster via ansible
 
 ## Overview
-The provided playbooks Ansible deploy a Kubernetes cluster with a basic topology: one master and at least two nodes.
+The provided Ansible playbooks allow you to deploy a Kubernetes cluster both on bare metal and on an OpenStack cloud.
 The installation is based on the kubeadm tool configured with a pre-generated admin token and flannel network.
 The playbooks enrich the cluster installation with a set of services such as:
 - dashboards: legacy and Grafana
 - monitoring: Prometheus Operator
-- Big Data: Spark Operator.
+- Big Data: Spark and Apache Kafka operators.
 
 ## System requirements
-- Deployment environment must have Ansible 2.4.0+
-- Expects 3 Ubuntu nodes (tested on 18.04)
+The deployment environment requires:
+- Ansible 2.5.0+
+- Ubuntu 18.04
 - Master and nodes must have passwordless SSH access
 
 ## Get Started
@@ -25,35 +26,69 @@ The directory structure should be like
 
 ```
 ansible-k8s/
+├── config
+│   ├── config
+│   ├── keystone_client.py
+│   └── tls-ca-bundle.pem
+├── deploy_k8s.yaml
+├── deploy_master_openstack.yaml
+├── deploy_node_openstack.yaml
 ├── group_vars
 │   └── all
 ├── inventory
 ├── k8s
 │   ├── alertmanager-service.yaml
-│   ├── grafana-service.yaml
 │   ├── dashboard-setup.yaml
+│   ├── grafana-service.yaml
+│   ├── os-k8s-node.yaml
 │   └── prometheus-service.yaml
+├── openstack_config.yaml
 ├── README.md
-├── roles
-│   ├── common
-│   │   └── tasks
-│   │       └── main.yml
-│   ├── docker
-│   │   └── tasks
-│   │       └── main.yml
-│   ├── kubeadm
-│   │   └── tasks
-│   │       └── main.yml
-│   ├── master
-│   │   └── tasks
-│   │       └── main.yml
-│   └── node
-│       └── tasks
-│           └── main.yml
-└── deploy_k8s.yaml
+└── roles
+    ├── auth
+    │   └── keystone
+    │       ├── files
+    │       │   ├── infn_ca.pem
+    │       │   ├── k8s-auth-policy.yaml
+    │       │   ├── k8s-keystone-auth.yaml
+    │       │   ├── k8s-keystone-auth.yaml_orig
+    │       │   ├── keystone_client.py
+    │       │   ├── tls-ca-bundle.pem
+    │       │   └── webhookconfig.yaml
+    │       └── tasks
+    │           └── main.yml
+    ├── common
+    │   └── tasks
+    │       └── main.yml
+    ├── docker
+    │   └── tasks
+    │       └── main.yml
+    ├── kubeadm
+    │   └── tasks
+    │       └── main.yml
+    ├── master
+    │   ├── handlers
+    │   │   └── main.yml
+    │   └── tasks
+    │       └── main.yml
+    ├── node
+    │   └── tasks
+    │       └── main.yml
+    ├── os-node
+    │   └── tasks
+    │       └── main.yml
+    ├── prometheus
+    │   └── tasks
+    │       └── main.yml
+    └── spark
+        └── tasks
+            └── main.yml
 ```
 
-Now edit the inventory file properly by specifying the IP addresses of master and nodes:
+## Deployment on bare metal
+
+The hosts on which your Kubernetes cluster will be deployed must already exist and have passwordless SSH access.
+Please, edit the inventory file properly by specifying the IP addresses of master and nodes:
 
 ```
 [master]
@@ -83,6 +118,29 @@ Finally execute:
 
 ```
 # ansible-playbook -i inventory deploy_k8s.yaml
+```
+
+## Deployment on OpenStack cloud
+
+Is supposed the hosts on which your Kubernetes cluster will be deployed NOT already exist. The provided Ansible playbook is able to create and configure properly all hosts (i.e. VMs) on an OpenStack cloud and deploy Kubernetes on them.
+To do it, edit the file openstack_config.yaml and fill up all required attributes (i.e. OS_AUTH_URL, OS_PROJECT_NAME, OS_USERNAME, etc), the same used for accessing OpenStack by its client. Moreover, please define the VMs characteristics which will host your Kubernetes cluster, in terms of name, flavor, and image. Finally, specify the number of nodes is expected to be composed of your cluster.
+Add your SSH key to the ssh-agent
+
+```
+# eval "$(ssh-agent -s)"
+Agent pid 59566
+
+# ssh-add ~/.ssh/id_rsa
+```
+or
+```
+# ssh-add ~/your_cert.pem
+```
+
+Finally execute:
+
+```
+# ansible-playbook deploy_master_openstack
 ```
 
 ## Test if it worked
