@@ -5,7 +5,7 @@ metadata:
   name: os-k8s-node
   namespace: kube-system
 spec:
-  parallelism: 4
+  parallelism: <PARALLELISM>
   template:
     metadata:
       labels:
