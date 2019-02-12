@@ -140,8 +140,12 @@ or
 Finally execute:
 
 ```
-# ansible-playbook deploy_master_openstack
+# ansible-playbook deploy_master_openstack.yaml
 ```
+Please remark that deployment requires further a few minutes to have the full cluster up and running.
+
+### Access your Kubernetes cluster 
+
 
 ## Test if it worked
 The cluster exposes the following services:
