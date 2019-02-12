@@ -144,11 +144,17 @@ Finally execute:
 ```
 Please remark that deployment requires further a few minutes to have the full cluster up and running.
 
-### Access your Kubernetes cluster 
+
+## How to access your Kubernetes cluster 
+
+There are two different ways to access the Kubernetes cluster: by kubectl or by the dashboard.
+
+### by kubectl tool
+The kubectl command line tool is available on the master node. If you like you can install it on your pc in order to access the cluster remotely (https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 
 
-## Test if it worked
-The cluster exposes the following services:
+### Dashboards
+The cluster exposes the following dashboards:
 - K8S dashboard: https://<master_ip>:30900
 - Prometheus UI: http://<master_ip>:30901
 - Alertmanager UI: http://<master_ip>:30902
@@ -168,6 +174,6 @@ token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2V
 
 To login into the Grafana dashboard as administrator use the credential: username=admin and password=admin. The first login requires the changing of the default password for security reasons.
 
-
+### by kubectl tool
 
 
