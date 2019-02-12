@@ -48,8 +48,8 @@
     regexp: "{{ item.name }}"
     replace: "{{ item.value }}"
   with_items:
-    - {name: "OS_PROJECT", value: "{{ lookup('env', 'OS_PROJECT_NAME') }}"}
-    - {name: "OS_USERNAME", value: "{{ lookup('env', 'OS_USERNAME') }}"}
+    - {name: "OS_PROJECT", value: "{{ OS_PROJECT_NAME }}"}
+    - {name: "OS_USERNAME", value: "{{ OS_USERNAME }}"}
 
 
 
