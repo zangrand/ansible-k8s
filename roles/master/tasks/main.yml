@@ -68,52 +68,10 @@
   retries: 5
   delay: 2
 
-- name: Copy the OS key cert to /etc/kubernetes/pki/
-  when: init_cluster and started_kubelet
-  become: yes
-  copy:
-    src: "{{ OS_KEY_CERT }}"
-    dest: /etc/kubernetes/pki/key_cert.pem
-
-- name: Copy the OS CA cert to /etc/kubernetes/pki/
-  when: init_cluster and started_kubelet
-  become: yes
-  copy:
-    src: "{{ lookup('env', 'OS_CACERT') }}"
-    dest: /etc/kubernetes/pki/ca_cert.pem
-
 - name: Calculate the K8S CA CERT HASH
   when: init_cluster and started_kubelet
   shell: openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d ' ' -f1
   register: k8s_ca_cert_hash
 
-- name: Create the secret for os-k8s-node
-  when: init_cluster and started_kubelet
-  become: yes
-  command: |
-    kubectl --kubeconfig={{ kubeadmin_config }} \
-        create secret generic os-k8s-node \
-        --from-literal=OS_AUTH_URL={{ lookup('env', 'OS_AUTH_URL') }} \
-        --from-literal=OS_PROJECT_ID={{ lookup('env', 'OS_PROJECT_ID') }} \
-        --from-literal=OS_PROJECT_NAME={{ lookup('env', 'OS_PROJECT_NAME') }} \
-        --from-literal=OS_USER_DOMAIN_NAME={{ lookup('env', 'OS_USER_DOMAIN_NAME') }} \
-        --from-literal=OS_USERNAME={{ lookup('env', 'OS_USERNAME') }} \
-        --from-literal=OS_PASSWORD={{ lookup('env', 'OS_PASSWORD') }} \
-        --from-literal=OS_INTERFACE={{ lookup('env', 'OS_INTERFACE') }} \
-        --from-literal=OS_IDENTITY_API_VERSION={{ lookup('env', 'OS_IDENTITY_API_VERSION') }} \
-        --from-literal=OS_VM_NAME={{ OS_NODE_NAME }} \
-        --from-literal=OS_IMAGE={{ OS_NODE_IMAGE }} \
-        --from-literal=OS_FLAVOR={{ OS_NODE_FLAVOR }} \
-        --from-literal=OS_NETWORK={{ OS_NETWORK }} \
-        --from-literal=OS_SECURITY_GROUP={{ OS_SECURITY_GROUP }} \
-        --from-literal=OS_KEY_NAME={{ OS_KEY_NAME }} \
-        --from-literal=OS_KEY_CERT="/etc/kubernetes/pki/os_key_cert.pem" \
-        --from-literal=OS_CACERT="/etc/kubernetes/pki/os_ca_cert.pem" \
-        --from-literal=K8S_MASTER_HOST={{ hostvars[groups['master'][0]]['ansible_host'] }} \
-        --from-literal=K8S_CA_CERT_HASH={{ k8s_ca_cert_hash.stdout }} \
-        --from-file=os_ca_cert.pem="/etc/kubernetes/pki/ca_cert.pem" \
-        --from-file=os_key_cert.pem="/etc/kubernetes/pki/key_cert.pem" \
-        -n kube-system
-  register: create_result
 
 

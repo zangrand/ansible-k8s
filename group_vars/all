@@ -1,8 +1,6 @@
 
 kubeadm_token: decaf2.c61dd19a426515ec
 
-master_ip: "{{ hostvars['master1']['ansible_eth0']['ipv4']['address'] }}"
-
 flannel_subnet: 10.244.0.0/16
 
 ansible_user: ubuntu
@@ -13,18 +11,3 @@ kubeadmin_config: /etc/kubernetes/admin.conf
 
 enable_dashboard: yes
 
-enable_metrics: yes
-
-
-OS_MASTER_NAME: master
-OS_MASTER_IMAGE: ubuntu_18.04
-OS_MASTER_FLAVOR: cloudveneto.8cores8GB25GB
-
-OS_NODE_NAME: node
-OS_NODE_IMAGE: ubuntu_18.04
-OS_NODE_FLAVOR: cloudveneto.8cores8GB25GB
-
-OS_NETWORK: SMACT-lan
-OS_SECURITY_GROUP: K8S-SG
-OS_KEY_NAME: Lisa
-OS_KEY_CERT: /home/lisa/lisa_openstack.pem 

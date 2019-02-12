@@ -1,6 +1,21 @@
 - name: Launch a compute instance
   hosts: localhost
-
+  vars_files:
+    - openstack_config.yaml
+    
+  environment:
+    OS_AUTH_URL: "{{ OS_AUTH_URL }}"
+    OS_PROJECT_NAME: "{{ OS_PROJECT_NAME }}"
+    OS_PROJECT_ID: "{{ OS_PROJECT_ID }}"
+    OS_USER_DOMAIN_NAME: "{{ OS_USER_DOMAIN_NAME }}"
+    OS_USERNAME: "{{ OS_USERNAME }}"
+    OS_PASSWORD: "{{ OS_PASSWORD }}"
+    OS_PROJECT_NAME: "{{ OS_PROJECT_NAME }}"
+    OS_REGION_NAME: "{{ OS_REGION_NAME }}"
+    OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
+    OS_CACERT: "{{ OS_CACERT }}"
+    OS_INTERFACE: "{{ OS_INTERFACE }}"
+    
   tasks:
   - name: Create the K8S security group
     os_security_group:
@@ -22,6 +37,7 @@
 
   - name: Launch a VM
     os_server:
+      state: present
       name: "{{ item.name }}"
       image: "{{ item.image }}"
       key_name: "{{ item.key_name }}"
@@ -54,7 +70,8 @@
     with_items: "{{ server.results }}"
 
 
-- import_playbook: deploy_k8s.yaml
+- name: Install Kubernetes
+  import_playbook: deploy_k8s.yaml
 
 
 - name: Install Keystone authentication webhook
@@ -62,5 +79,11 @@
   remote_user: ubuntu
   become: yes
   become_method: sudo
+  
+  vars_files:
+    - openstack_config.yaml
+    
   roles:
+    - os-node
     - auth/keystone
+
