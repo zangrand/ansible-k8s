@@ -125,7 +125,7 @@ Finally execute:
 It is supposed the hosts on which your Kubernetes cluster will be deployed NOT already exist. The provided Ansible playbook is able to create and configure properly all hosts (i.e. VMs) on an OpenStack cloud and deploy Kubernetes on them.
 To do it, edit the file openstack_config.yaml and fill up all required attributes (i.e. OS_AUTH_URL, OS_PROJECT_NAME, OS_USERNAME, etc), the same used for accessing OpenStack by its client. Moreover, please define the VMs characteristics of the master and nodes, in terms of name, flavor, and image. Finally, specify the number of nodes (i.e. OS_NODES) is expected to be composed of your cluster.
 
-Verify if the 'shade' Python module is avialable on your environment, otherwise install it
+Verify if the 'shade' Python module is available on your environment, otherwise install it:
 
 ```
 $ pip install shade
@@ -159,7 +159,7 @@ There are two different ways to access the Kubernetes cluster: by the kubectl or
 ### By kubectl 
 The kubectl command line tool is available on the master node. If you wish to access the cluster remotely please see the following guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/.
 In case of Kubernetes has been deployed on OpenStack, you can enable your local kubectl to access the cluster through the Keystone authentication. To do it, copy all files contained into the folder ansible-k8s/config/ to $HOME/.kube/ . The tls-ca-bundle.pem file is CA certificate required by the CloudVeneto OpenStack base cloud. Please use your CE certiticate, if rquired.
-Edit $HOME/.kube/config and set the IP address of your new cluster. TBD
+Edit $HOME/.kube/config and set the IP address of your new cluster.
 
 
 ### By dashboards
