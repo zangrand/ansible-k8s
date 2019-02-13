@@ -159,7 +159,7 @@ There are two different ways to access the Kubernetes cluster: by the kubectl or
 ### By kubectl 
 The kubectl command line tool is available on the master node. If you wish to access the cluster remotely please see the following guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/.
 In case of Kubernetes has been deployed on OpenStack, you can enable your local kubectl to access the cluster through the Keystone authentication. To do it, copy all files contained into the folder ansible-k8s/config/ to $HOME/.kube/ . The tls-ca-bundle.pem file is CA certificate required by the CloudVeneto OpenStack base cloud. Please use your CE certiticate, if rquired.
-Edit $HOME/.kube/config and set the IP address of your new cluster.
+Edit $HOME/.kube/config and set the IP address of your new K8S master.
 
 
 ### By dashboards
