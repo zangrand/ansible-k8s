@@ -22,6 +22,7 @@
     - master
     - prometheus
     - spark
+    - kafka
 
 - name: Install nodes
   remote_user: ubuntu
