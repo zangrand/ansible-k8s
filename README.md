@@ -123,7 +123,14 @@ Finally execute:
 ## Deployment on an OpenStack cloud
 
 It is supposed the hosts on which your Kubernetes cluster will be deployed NOT already exist. The provided Ansible playbook is able to create and configure properly all hosts (i.e. VMs) on an OpenStack cloud and deploy Kubernetes on them.
-To do it, edit the file openstack_config.yaml and fill up all required attributes (i.e. OS_AUTH_URL, OS_PROJECT_NAME, OS_USERNAME, etc), the same used for accessing OpenStack by its client. Moreover, please define the VMs characteristics of the master and nodes, in terms of name, flavor, and image. Finally, specify the number of nodes is expected to be composed of your cluster.
+To do it, edit the file openstack_config.yaml and fill up all required attributes (i.e. OS_AUTH_URL, OS_PROJECT_NAME, OS_USERNAME, etc), the same used for accessing OpenStack by its client. Moreover, please define the VMs characteristics of the master and nodes, in terms of name, flavor, and image. Finally, specify the number of nodes (i.e. OS_NODES) is expected to be composed of your cluster.
+
+Verify if the 'shade' Python module is avialable on your environment, otherwise install it
+
+```
+$ pip install shade
+```
+
 Add your SSH key to the ssh-agent
 
 ```
