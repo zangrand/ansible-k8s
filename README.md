@@ -14,7 +14,7 @@ The deployment environment requires:
 - Ubuntu 18.04
 - Master and nodes must have passwordless SSH access
 
-## Get Started
+## Getting Started
 This section represents a quick installation and is not intended to teach you about all the components. The easiest way to get started is to clone the 'ansible-k8s' repository:
 
 ```
@@ -120,7 +120,7 @@ Finally execute:
 # ansible-playbook -i inventory deploy_k8s.yaml
 ```
 
-## Deployment on OpenStack cloud
+## Deployment on an OpenStack cloud
 
 It is supposed the hosts on which your Kubernetes cluster will be deployed NOT already exist. The provided Ansible playbook is able to create and configure properly all hosts (i.e. VMs) on an OpenStack cloud and deploy Kubernetes on them.
 To do it, edit the file openstack_config.yaml and fill up all required attributes (i.e. OS_AUTH_URL, OS_PROJECT_NAME, OS_USERNAME, etc), the same used for accessing OpenStack by its client. Moreover, please define the VMs characteristics of the master and nodes, in terms of name, flavor, and image. Finally, specify the number of nodes is expected to be composed of your cluster.
@@ -147,13 +147,15 @@ Please remark that deployment requires further a few minutes to have the full cl
 
 ## How to access your Kubernetes cluster 
 
-There are two different ways to access the Kubernetes cluster: by kubectl or by the dashboard.
+There are two different ways to access the Kubernetes cluster: by the kubectl or by the dashboard.
 
-### by kubectl tool
-The kubectl command line tool is available on the master node. If you like you can install it on your pc in order to access the cluster remotely (https://kubernetes.io/docs/tasks/tools/install-kubectl/).
+### By kubectl 
+The kubectl command line tool is available on the master node. If you wish to access the cluster remotely please see the following guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/.
+In case of Kubernetes has been deployed on OpenStack, you can enable your local kubectl to access the cluster through the Keystone authentication. To do it, copy all files contained into the folder ansible-k8s/config/ to $HOME/.kube/ . The tls-ca-bundle.pem file is CA certificate required by the CloudVeneto OpenStack base cloud. Please use your CE certiticate, if rquired.
+Edit $HOME/.kube/config and set the IP address of your new cluster. TBD
 
 
-### Dashboards
+### By dashboards
 The cluster exposes the following dashboards:
 - K8S dashboard: https://<master_ip>:30900
 - Prometheus UI: http://<master_ip>:30901
@@ -173,7 +175,3 @@ token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2V
 ```
 
 To login into the Grafana dashboard as administrator use the credential: username=admin and password=admin. The first login requires the changing of the default password for security reasons.
-
-### by kubectl tool
-
-
