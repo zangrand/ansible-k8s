@@ -5,7 +5,7 @@
 
 
 - name: kubeadm join with pre generated token
-  command: kubeadm join --token {{ kubeadm_token }} {{ lookup("env", "K8S_MASTER_HOST") }}:6443 --discovery-token-ca-cert-hash sha256:{{ lookup("env", "K8S_CA_CERT_HASH") }}
+  command: kubeadm join --token {{ kubeadm_token }} {{ hostvars[groups['master'][0]]['ansible_host'] }}:6443 --discovery-token-ca-cert-hash sha256:{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}
 
 
 - name: Enable and restart kubelet engine

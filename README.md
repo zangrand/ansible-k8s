@@ -1,19 +1,20 @@
 # Deployment of a Kubernetes cluster via ansible
 
 ## Overview
-The provided playbooks Ansible deploy a Kubernetes cluster with a basic topology: one master and at least two nodes.
+The provided Ansible playbooks allow you to deploy a Kubernetes cluster both on bare metal and on an OpenStack cloud.
 The installation is based on the kubeadm tool configured with a pre-generated admin token and flannel network.
 The playbooks enrich the cluster installation with a set of services such as:
 - dashboards: legacy and Grafana
 - monitoring: Prometheus Operator
-- Big Data: Spark Operator.
+- Big Data: Spark and Apache Kafka operators.
 
 ## System requirements
-- Deployment environment must have Ansible 2.4.0+
-- Expects 3 Ubuntu nodes (tested on 18.04)
+The deployment environment requires:
+- Ansible 2.5.0+
+- Ubuntu 18.04
 - Master and nodes must have passwordless SSH access
 
-## Get Started
+## Getting Started
 This section represents a quick installation and is not intended to teach you about all the components. The easiest way to get started is to clone the 'ansible-k8s' repository:
 
 ```
@@ -25,35 +26,69 @@ The directory structure should be like
 
 ```
 ansible-k8s/
+├── config
+│   ├── config
+│   ├── keystone_client.py
+│   └── tls-ca-bundle.pem
+├── deploy_k8s.yaml
+├── deploy_master_openstack.yaml
+├── deploy_node_openstack.yaml
 ├── group_vars
 │   └── all
 ├── inventory
 ├── k8s
 │   ├── alertmanager-service.yaml
-│   ├── grafana-service.yaml
 │   ├── dashboard-setup.yaml
+│   ├── grafana-service.yaml
+│   ├── os-k8s-node.yaml
 │   └── prometheus-service.yaml
+├── openstack_config.yaml
 ├── README.md
-├── roles
-│   ├── common
-│   │   └── tasks
-│   │       └── main.yml
-│   ├── docker
-│   │   └── tasks
-│   │       └── main.yml
-│   ├── kubeadm
-│   │   └── tasks
-│   │       └── main.yml
-│   ├── master
-│   │   └── tasks
-│   │       └── main.yml
-│   └── node
-│       └── tasks
-│           └── main.yml
-└── deploy_k8s.yaml
+└── roles
+    ├── auth
+    │   └── keystone
+    │       ├── files
+    │       │   ├── infn_ca.pem
+    │       │   ├── k8s-auth-policy.yaml
+    │       │   ├── k8s-keystone-auth.yaml
+    │       │   ├── k8s-keystone-auth.yaml_orig
+    │       │   ├── keystone_client.py
+    │       │   ├── tls-ca-bundle.pem
+    │       │   └── webhookconfig.yaml
+    │       └── tasks
+    │           └── main.yml
+    ├── common
+    │   └── tasks
+    │       └── main.yml
+    ├── docker
+    │   └── tasks
+    │       └── main.yml
+    ├── kubeadm
+    │   └── tasks
+    │       └── main.yml
+    ├── master
+    │   ├── handlers
+    │   │   └── main.yml
+    │   └── tasks
+    │       └── main.yml
+    ├── node
+    │   └── tasks
+    │       └── main.yml
+    ├── os-node
+    │   └── tasks
+    │       └── main.yml
+    ├── prometheus
+    │   └── tasks
+    │       └── main.yml
+    └── spark
+        └── tasks
+            └── main.yml
 ```
 
-Now edit the inventory file properly by specifying the IP addresses of master and nodes:
+## Deployment on bare metal
+
+The hosts on which your Kubernetes cluster will be deployed must already exist and have passwordless SSH access.
+Please, edit the inventory file properly by specifying the IP addresses of master and nodes:
 
 ```
 [master]
@@ -85,8 +120,50 @@ Finally execute:
 # ansible-playbook -i inventory deploy_k8s.yaml
 ```
 
-## Test if it worked
-The cluster exposes the following services:
+## Deployment on an OpenStack cloud
+
+It is supposed the hosts on which your Kubernetes cluster will be deployed NOT already exist. The provided Ansible playbook is able to create and configure properly all hosts (i.e. VMs) on an OpenStack cloud and deploy Kubernetes on them.
+To do it, edit the file openstack_config.yaml and fill up all required attributes (i.e. OS_AUTH_URL, OS_PROJECT_NAME, OS_USERNAME, etc), the same used for accessing OpenStack by its client. Moreover, please define the VMs characteristics of the master and nodes, in terms of name, flavor, and image. Finally, specify the number of nodes (i.e. OS_NODES) is expected to be composed of your cluster.
+
+Verify if the 'shade' Python module is available on your environment, otherwise install it:
+
+```
+$ pip install shade
+```
+
+Add your SSH key to the ssh-agent
+
+```
+# eval "$(ssh-agent -s)"
+Agent pid 59566
+
+# ssh-add ~/.ssh/id_rsa
+```
+or
+```
+# ssh-add ~/your_cert.pem
+```
+
+Finally execute:
+
+```
+# ansible-playbook deploy_master_openstack.yaml
+```
+Please remark that deployment requires further a few minutes to have the full cluster up and running.
+
+
+## How to access your Kubernetes cluster 
+
+There are two different ways to access the Kubernetes cluster: by the kubectl or by the dashboard.
+
+### By kubectl 
+The kubectl command line tool is available on the master node. If you wish to access the cluster remotely please see the following guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/.
+In case of Kubernetes has been deployed on OpenStack, you can enable your local kubectl to access the cluster through the Keystone authentication. To do it, copy all files contained into the folder ansible-k8s/config/ to $HOME/.kube/ . The tls-ca-bundle.pem file is CA certificate required by the CloudVeneto OpenStack base cloud. Do not forget to source the openrc.sh with your Openstack credentials and OS_CACERT variable set. Please use your CA certificate, if required.
+Edit $HOME/.kube/config and set the IP address of your new K8S master.
+
+
+### By dashboards
+The cluster exposes the following dashboards:
 - K8S dashboard: https://<master_ip>:30900
 - Prometheus UI: http://<master_ip>:30901
 - Alertmanager UI: http://<master_ip>:30902
@@ -105,7 +182,3 @@ token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2V
 ```
 
 To login into the Grafana dashboard as administrator use the credential: username=admin and password=admin. The first login requires the changing of the default password for security reasons.
-
-
-
-

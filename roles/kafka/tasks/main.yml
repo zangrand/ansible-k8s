@@ -1,0 +1,27 @@
+---
+
+- name: Install kafka operator
+  vars:
+    projectns: spark-operator
+    strimziver: 0.10.0
+  become: no
+  block:
+    - unarchive:
+        remote_src: yes
+        src: http://artifacts.pd.infn.it/packages/SMACT/misc/strimzi-{{ strimziver }}.tar.gz
+        dest: ./
+    - find:
+        paths: ./strimzi-{{ strimziver }}/install/cluster-operator
+        patterns: '*RoleBinding*.yaml'
+      register: rolebindings
+    - replace:
+        path: "{{ item.path }}"
+        regexp: "namespace: .*"
+        replace: "namespace: {{ projectns }}"
+      with_items: "{{ rolebindings.files }}"
+    - command: |
+        kubectl --kubeconfig={{ kubeadmin_config }} apply -f ./strimzi-{{ strimziver }}/install/cluster-operator -n {{ projectns }}
+  rescue:
+    - debug:
+        msg: "Cannot deploy Kafka operator"
+
