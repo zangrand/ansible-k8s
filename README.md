@@ -10,7 +10,7 @@ The playbooks enrich the cluster installation with a set of services such as:
 
 ## System requirements
 The deployment environment requires:
-- Ansible 2.5.0+
+- Ansible 2.5.x (2.7.x not yet fully supported)
 - Ubuntu 18.04
 - Master and nodes must have passwordless SSH access
 
@@ -137,10 +137,7 @@ Add your SSH key to the ssh-agent
 # eval "$(ssh-agent -s)"
 Agent pid 59566
 
-# ssh-add ~/.ssh/id_rsa
-```
-or
-```
+# specify the same OpenStack .pem file you use to access your VM using ssh -i
 # ssh-add ~/your_cert.pem
 ```
 
