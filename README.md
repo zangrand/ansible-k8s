@@ -111,7 +111,7 @@ Agent pid 59566
 ```
 or
 ```
-# ssh-add ~/your_cert.pem
+# ssh-add your_cert.pem
 ```
 
 Finally execute:
@@ -131,13 +131,17 @@ Verify if the 'shade' Python module is available on your environment, otherwise 
 $ pip install shade
 ```
 
-Add your SSH key to the ssh-agent. Please use the same OpenStack .pem file to access your VM using ssh -i
+Add your SSH private key to the ssh-agent. Please use the same key associated to your OpenStack Key Pair and by which you can login your VM using ssh -i cloud.key <username>@<instance_ip>
 
 ```
 # eval "$(ssh-agent -s)"
 Agent pid 59566
 
-# ssh-add ~/your_cert.pem
+# ssh-add cloud.key
+```
+or
+```
+# ssh-add your_cert.pem
 ```
 
 Finally execute:
