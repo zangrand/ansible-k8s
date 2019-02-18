@@ -194,7 +194,7 @@ Take the spark-pi.yaml file from examples directory, and execute the following k
 NAME       AGE
 spark-pi   5m
 
-#kubectl describe sparkapplications spark-pi
+# kubectl describe sparkapplications spark-pi
 Name:         spark-pi
 Namespace:    default
 Labels:       <none>
