@@ -182,3 +182,28 @@ token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2V
 ```
 
 To login into the Grafana dashboard as administrator use the credential: username=admin and password=admin. The first login requires the changing of the default password for security reasons.
+
+## Testing your Kubernetes cluster
+
+### Using the spark application spark-pi
+Take the spark-pi.yaml file from examples directory, and execute the following kubectl commands:
+```
+# kubectl apply -f spark-pi.yaml
+
+# kubectl get sparkapplications spark-pi
+NAME       AGE
+spark-pi   5m
+
+#kubectl describe sparkapplications spark-pi
+Name:         spark-pi
+Namespace:    default
+Labels:       <none>
+Annotations:  kubectl.kubernetes.io/last-applied-configuration:
+                {"apiVersion":"sparkoperator.k8s.io/v1beta1","kind":"SparkApplication","metadata":{"annotations":{},"name":"spark-pi","namespace":"default...
+API Version:  sparkoperator.k8s.io/v1beta1
+Kind:         SparkApplication
+[...]
+
+# kubectl logs -f spark-pi-driver | grep "Pi is roughly"
+Pi is roughly 3.1458557292786464
+```
