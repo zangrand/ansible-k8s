@@ -207,3 +207,69 @@ Kind:         SparkApplication
 # kubectl logs -f spark-pi-driver | grep "Pi is roughly"
 Pi is roughly 3.1458557292786464
 ```
+### Creating a Kafka cluster with a topic
+
+Declare the cluster structure in a yaml file, kcluster.yaml, like:
+```
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: Kafka
+metadata:
+  name: kcluster
+  namespace: spark-operator
+spec:
+  kafka:
+    replicas: 3
+    listeners:
+      #plain: {}
+      #tls: {}
+      external:
+        type: nodeport
+        tls: false
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+    storage:
+      type: ephemeral
+  zookeeper:
+    replicas: 3
+    storage:
+      type: ephemeral
+  entityOperator:
+    topicOperator:
+      watchedNamespace: spark-operator
+      zookeeperSessionTimeoutSeconds: 60
+    userOperator: {}
+```
+and then run
+```
+# kubectl apply -f kcluster.yaml
+```
+The namespace must be the same declared for the spark operator.
+For further details see https://strimzi.io/docs/master/#assembly-deployment-configuration-str
+
+A topic for the Kafka cluster can be declared with the following yaml file, ktopic.yaml:
+```
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: KafkaTopic
+metadata:
+  name: ktopic
+  namespace: spark-operator
+  labels:
+    strimzi.io/cluster: kcluster
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
+```
+and then running
+```
+# kubectl apply -f ktopic.yaml
+```
+Kubernetes provides a port on the master for accessing the created cluster.
+The port number is reported by the following command
+```
+kubectl --namespace spark-operator get service kcluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}{"\n"}'
+```
