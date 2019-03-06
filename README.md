@@ -10,7 +10,7 @@ The playbooks enrich the cluster installation with a set of services such as:
 
 ## System requirements
 The deployment environment requires:
-- Ansible 2.5.x (2.7.x not yet fully supported)
+- Ansible 2.5.0+
 - Ubuntu 18.04
 - Master and nodes must have passwordless SSH access
 
@@ -63,6 +63,16 @@ ansible-k8s/
     ├── docker
     │   └── tasks
     │       └── main.yml
+    ~T~\~T~@~T~@ haproxy
+    ~T~B| |  ~T~T~T~@~T~@ tasks
+    ~T~B| |      ~T~T~T~@~T~@ main.yml
+    ~T~B| |  ~T~T~T~@~T~@ templates
+    ~T~B| |      ~T~T~T~@~T~@ haproxy.cfg.j2
+    ~T~\~T~@~T~@ keepalived
+    ~T~B| |  ~T~T~T~@~T~@ tasks
+    ~T~B| |      ~T~T~T~@~T~@ main.yml
+    ~T~B| |  ~T~T~T~@~T~@ templates
+    ~T~B| |      ~T~T~T~@~T~@ keepalived.conf.j2
     ├── kubeadm
     │   └── tasks
     │       └── main.yml
@@ -71,6 +81,13 @@ ansible-k8s/
     │   │   └── main.yml
     │   └── tasks
     │       └── main.yml
+    ~T~\~T~@~T~@ masterha
+    ~T~B| |  ~T~\~T~@~T~@ handlers
+    ~T~B| |  ~T~B| |  ~T~T~T~@~T~@ main.yml
+    ~T~B| |  ~T~T~T~@~T~@ tasks
+    ~T~B| |      ~T~T~T~@~T~@ main.yml
+    ~T~B| |  ~T~T~T~@~T~@ templates
+    ~T~B| |      ~T~T~T~@~T~@ kubeadm-config.yaml.j2
     ├── node
     │   └── tasks
     │       └── main.yml
@@ -101,6 +118,23 @@ node3 ansible_host=10.64.41.15
 ...
 ```
 
+In the eventually you want an HighAvailability Master the inventory shoul be in thi format:
+```
+[master]
+master1 ansible_host=10.64.41.16
+master2 ansible_host=10.64.41.17
+master3 ansible_host=10.64.41.18
+
+[node]
+node1 ansible_host=10.64.41.11
+node2 ansible_host=10.64.41.12
+node3 ansible_host=10.64.41.15
+
+[all:vars]
+keepalived_vip=10.64.41.100
+...
+```
+
 Add your SSH key to the ssh-agent
 
 ```
@@ -111,14 +145,21 @@ Agent pid 59566
 ```
 or
 ```
-# ssh-add your_cert.pem
+# ssh-add ~/your_cert.pem
 ```
 
-Finally execute:
+If you want 1 master finally execute:
 
 ```
 # ansible-playbook -i inventory deploy_k8s.yaml
 ```
+
+If you want 3 masters in HA finally execute:
+
+```
+# ansible-playbook -i inventory deploy_k8s_ha.yaml
+```
+
 
 ## Deployment on an OpenStack cloud
 
@@ -131,17 +172,17 @@ Verify if the 'shade' Python module is available on your environment, otherwise 
 $ pip install shade
 ```
 
-Add your SSH private key to the ssh-agent. Please use the same key associated to your OpenStack Key Pair and by which you can login your VM using ssh -i cloud.key <username>@<instance_ip>
+Add your SSH key to the ssh-agent
 
 ```
 # eval "$(ssh-agent -s)"
 Agent pid 59566
 
-# ssh-add cloud.key
+# ssh-add ~/.ssh/id_rsa
 ```
 or
 ```
-# ssh-add your_cert.pem
+# ssh-add ~/your_cert.pem
 ```
 
 Finally execute:
@@ -182,94 +223,3 @@ token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2V
 ```
 
 To login into the Grafana dashboard as administrator use the credential: username=admin and password=admin. The first login requires the changing of the default password for security reasons.
-
-## Testing your Kubernetes cluster
-
-### Using the spark application spark-pi
-Take the spark-pi.yaml file from examples directory, and execute the following kubectl commands:
-```
-# kubectl apply -f spark-pi.yaml
-
-# kubectl get sparkapplications spark-pi
-NAME       AGE
-spark-pi   5m
-
-# kubectl describe sparkapplications spark-pi
-Name:         spark-pi
-Namespace:    default
-Labels:       <none>
-Annotations:  kubectl.kubernetes.io/last-applied-configuration:
-                {"apiVersion":"sparkoperator.k8s.io/v1beta1","kind":"SparkApplication","metadata":{"annotations":{},"name":"spark-pi","namespace":"default...
-API Version:  sparkoperator.k8s.io/v1beta1
-Kind:         SparkApplication
-[...]
-
-# kubectl logs -f spark-pi-driver | grep "Pi is roughly"
-Pi is roughly 3.1458557292786464
-```
-### Creating a Kafka cluster with a topic
-
-Declare the cluster structure in a yaml file, kcluster.yaml, like:
-```
-apiVersion: kafka.strimzi.io/v1alpha1
-kind: Kafka
-metadata:
-  name: kcluster
-  namespace: spark-operator
-spec:
-  kafka:
-    replicas: 3
-    listeners:
-      #plain: {}
-      #tls: {}
-      external:
-        type: nodeport
-        tls: false
-    config:
-      offsets.topic.replication.factor: 3
-      transaction.state.log.replication.factor: 3
-      transaction.state.log.min.isr: 2
-    storage:
-      type: ephemeral
-  zookeeper:
-    replicas: 3
-    storage:
-      type: ephemeral
-  entityOperator:
-    topicOperator:
-      watchedNamespace: spark-operator
-      zookeeperSessionTimeoutSeconds: 60
-    userOperator: {}
-```
-and then run
-```
-# kubectl apply -f kcluster.yaml
-```
-The namespace must be the same declared for the spark operator.
-For further details see https://strimzi.io/docs/master/#assembly-deployment-configuration-str
-
-A topic for the Kafka cluster can be declared with the following yaml file, ktopic.yaml:
-```
-apiVersion: kafka.strimzi.io/v1alpha1
-kind: KafkaTopic
-metadata:
-  name: ktopic
-  namespace: spark-operator
-  labels:
-    strimzi.io/cluster: kcluster
-spec:
-  partitions: 1
-  replicas: 1
-  config:
-    retention.ms: 7200000
-    segment.bytes: 1073741824
-```
-and then running
-```
-# kubectl apply -f ktopic.yaml
-```
-Kubernetes provides a port on the master for accessing the created cluster.
-The port number is reported by the following command
-```
-kubectl --namespace spark-operator get service kcluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}{"\n"}'
-```

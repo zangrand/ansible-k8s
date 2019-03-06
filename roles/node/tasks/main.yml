@@ -1,12 +1,20 @@
 ---
+- name: Swapoff the for allow kubeadm to run without warning
+  command: swapoff -a
+
 - name: Reset kubeadm before init in case this is not the first run
   when: kubeadm_reset_before_init
   command: kubeadm reset -f
 
+- name: kubeadm join with pre generated token to HA Kubernetes masters
+  command: kubeadm join --token {{ kubeadm_token }} {{ keepalived_vip }}:6443 --discovery-token-ca-cert-hash sha256:{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}
+  when: keepalived_vip is defined
+  register: kubeadm_join
 
-- name: kubeadm join with pre generated token
+- name: kubeadm join with pre generated token to Kubernetes master
   command: kubeadm join --token {{ kubeadm_token }} {{ hostvars[groups['master'][0]]['ansible_host'] }}:6443 --discovery-token-ca-cert-hash sha256:{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}
-
+  when:   keepalived_vip is not defined
+  
 
 - name: Enable and restart kubelet engine
   systemd:

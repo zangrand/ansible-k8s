@@ -21,6 +21,9 @@
       with_items: "{{ rolebindings.files }}"
     - command: |
         kubectl --kubeconfig={{ kubeadmin_config }} apply -f ./strimzi-{{ strimziver }}/install/cluster-operator -n {{ projectns }}
+  when:
+    "'master1' in inventory_hostname"
+
   rescue:
     - debug:
         msg: "Cannot deploy Kafka operator"
