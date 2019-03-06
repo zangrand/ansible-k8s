@@ -63,16 +63,16 @@ ansible-k8s/
     ├── docker
     │   └── tasks
     │       └── main.yml
-    ~T~\~T~@~T~@ haproxy
-    ~T~B| |  ~T~T~T~@~T~@ tasks
-    ~T~B| |      ~T~T~T~@~T~@ main.yml
-    ~T~B| |  ~T~T~T~@~T~@ templates
-    ~T~B| |      ~T~T~T~@~T~@ haproxy.cfg.j2
-    ~T~\~T~@~T~@ keepalived
-    ~T~B| |  ~T~T~T~@~T~@ tasks
-    ~T~B| |      ~T~T~T~@~T~@ main.yml
-    ~T~B| |  ~T~T~T~@~T~@ templates
-    ~T~B| |      ~T~T~T~@~T~@ keepalived.conf.j2
+    ├── haproxy
+    |   ├── tasks
+    |   |   └── main.yml
+    |   └── templates
+    |       └── haproxy.cfg.j2
+    ├── keepalived
+    |   ├── tasks
+    |   │   └── main.yml
+    |   └── templates
+    |       └── keepalived.conf.j2
     ├── kubeadm
     │   └── tasks
     │       └── main.yml
@@ -81,13 +81,13 @@ ansible-k8s/
     │   │   └── main.yml
     │   └── tasks
     │       └── main.yml
-    ~T~\~T~@~T~@ masterha
-    ~T~B| |  ~T~\~T~@~T~@ handlers
-    ~T~B| |  ~T~B| |  ~T~T~T~@~T~@ main.yml
-    ~T~B| |  ~T~T~T~@~T~@ tasks
-    ~T~B| |      ~T~T~T~@~T~@ main.yml
-    ~T~B| |  ~T~T~T~@~T~@ templates
-    ~T~B| |      ~T~T~T~@~T~@ kubeadm-config.yaml.j2
+    ├── masterha
+    │   ├── handlers
+    │   │   └── main.yml
+    │   ├── tasks
+    │   │   └── main.yml
+    |   └── templates
+    |       └── kubeadm-config.yaml.j2
     ├── node
     │   └── tasks
     │       └── main.yml
