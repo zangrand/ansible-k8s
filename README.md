@@ -202,7 +202,6 @@ The kubectl command line tool is available on the master node. If you wish to ac
 In case of Kubernetes has been deployed on OpenStack, you can enable your local kubectl to access the cluster through the Keystone authentication. To do it, copy all files contained into the folder ansible-k8s/config/ to $HOME/.kube/ . The tls-ca-bundle.pem file is CA certificate required by the CloudVeneto OpenStack base cloud. Do not forget to source the openrc.sh with your Openstack credentials and OS_CACERT variable set. Please use your CA certificate, if required.
 Edit $HOME/.kube/config and set the IP address of your new K8S master.
 
-
 ### By dashboards
 The cluster exposes the following dashboards:
 - K8S dashboard: https://<master_ip>:30900
@@ -223,3 +222,95 @@ token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2V
 ```
 
 To login into the Grafana dashboard as administrator use the credential: username=admin and password=admin. The first login requires the changing of the default password for security reasons.
+
+## Testing your Kubernetes cluster
+
+### Using the spark application spark-pi
+Take the spark-pi.yaml file from examples directory, and execute the following kubectl commands:
+```
+# kubectl apply -f spark-pi.yaml
+
+# kubectl get sparkapplications spark-pi
+NAME       AGE
+spark-pi   5m
+
+# kubectl describe sparkapplications spark-pi
+Name:         spark-pi
+Namespace:    default
+Labels:       <none>
+Annotations:  kubectl.kubernetes.io/last-applied-configuration:
+                {"apiVersion":"sparkoperator.k8s.io/v1beta1","kind":"SparkApplication","metadata":{"annotations":{},"name":"spark-pi","namespace":"default...
+API Version:  sparkoperator.k8s.io/v1beta1
+Kind:         SparkApplication
+[...]
+
+# kubectl logs -f spark-pi-driver | grep "Pi is roughly"
+Pi is roughly 3.1458557292786464
+```
+### Creating a Kafka cluster with a topic
+
+Declare the cluster structure in a yaml file, kcluster.yaml, like:
+```
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: Kafka
+metadata:
+  name: kcluster
+  namespace: spark-operator
+spec:
+  kafka:
+    replicas: 3
+    listeners:
+      #plain: {}
+      #tls: {}
+      external:
+        type: nodeport
+        tls: false
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+    storage:
+      type: ephemeral
+  zookeeper:
+    replicas: 3
+    storage:
+      type: ephemeral
+  entityOperator:
+    topicOperator:
+      watchedNamespace: spark-operator
+      zookeeperSessionTimeoutSeconds: 60
+    userOperator: {}
+```
+and then run
+```
+# kubectl apply -f kcluster.yaml
+```
+The namespace must be the same declared for the spark operator.
+For further details see https://strimzi.io/docs/master/#assembly-deployment-configuration-str
+
+A topic for the Kafka cluster can be declared with the following yaml file, ktopic.yaml:
+```
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: KafkaTopic
+metadata:
+  name: ktopic
+  namespace: spark-operator
+  labels:
+    strimzi.io/cluster: kcluster
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
+```
+and then running
+```
+# kubectl apply -f ktopic.yaml
+```
+Kubernetes provides a port on the master for accessing the created cluster.
+The port number is reported by the following command
+```
+kubectl --namespace spark-operator get service kcluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}{"\n"}'
+```
+
