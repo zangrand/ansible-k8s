@@ -2,8 +2,8 @@
 
 - name: Install kafka operator
   vars:
-    projectns: spark-operator
-    strimziver: 0.10.0
+    projectns: default
+    strimziver: 0.11.1
   become: no
   block:
     - unarchive:
@@ -19,6 +19,16 @@
         regexp: "namespace: .*"
         replace: "namespace: {{ projectns }}"
       with_items: "{{ rolebindings.files }}"
+    - replace:
+        path: ./strimzi-{{ strimziver }}/install/cluster-operator/050-Deployment-strimzi-cluster-operator.yaml
+        regexp: 'valueFrom:\n\s+fieldRef:\n\s+fieldPath:\s+metadata.namespace'
+        replace: "value: \"*\""
+    - command: |
+        kubectl --kubeconfig={{ kubeadmin_config }} create clusterrolebinding strimzi-cluster-operator-namespaced --clusterrole=strimzi-cluster-operator-namespaced --serviceaccount {{ projectns }}:strimzi-cluster-operator
+    - command: |
+        kubectl --kubeconfig={{ kubeadmin_config }} create clusterrolebinding strimzi-cluster-operator-entity-operator-delegation --clusterrole=strimzi-entity-operator --serviceaccount {{ projectns }}:strimzi-cluster-operator
+    - command: |
+        kubectl --kubeconfig={{ kubeadmin_config }} create clusterrolebinding strimzi-cluster-operator-topic-operator-delegation --clusterrole=strimzi-topic-operator --serviceaccount {{ projectns }}:strimzi-cluster-operator
     - command: |
         kubectl --kubeconfig={{ kubeadmin_config }} apply -f ./strimzi-{{ strimziver }}/install/cluster-operator -n {{ projectns }}
   rescue:
