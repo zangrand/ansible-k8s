@@ -31,6 +31,9 @@
         kubectl --kubeconfig={{ kubeadmin_config }} create clusterrolebinding strimzi-cluster-operator-topic-operator-delegation --clusterrole=strimzi-topic-operator --serviceaccount {{ projectns }}:strimzi-cluster-operator
     - command: |
         kubectl --kubeconfig={{ kubeadmin_config }} apply -f ./strimzi-{{ strimziver }}/install/cluster-operator -n {{ projectns }}
+  when:
+    "'master1' in inventory_hostname"
+
   rescue:
     - debug:
         msg: "Cannot deploy Kafka operator"

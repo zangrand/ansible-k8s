@@ -1,0 +1,16 @@
+apiVersion: kubeadm.k8s.io/v1beta1
+kind: InitConfiguration
+bootstrapTokens:
+- token: "{{ kubeadm_token }}"
+  description: "kubeadm bootstrap token"
+  ttl: "24h"
+---
+apiVersion: kubeadm.k8s.io/v1beta1
+kind: ClusterConfiguration
+kubernetesVersion: stable
+apiServer:
+  certSANs:
+  - "{{ keepalived_vip }}"
+networking:
+  podSubnet: "{{ flannel_subnet }}"
+controlPlaneEndpoint: "{{ keepalived_vip }}"

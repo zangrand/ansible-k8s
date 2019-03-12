@@ -10,7 +10,7 @@ The playbooks enrich the cluster installation with a set of services such as:
 
 ## System requirements
 The deployment environment requires:
-- Ansible 2.5.x (2.7.x not yet fully supported)
+- Ansible 2.5.0+
 - Ubuntu 18.04
 - Master and nodes must have passwordless SSH access
 
@@ -63,6 +63,16 @@ ansible-k8s/
     ├── docker
     │   └── tasks
     │       └── main.yml
+    ├── haproxy
+    |   ├── tasks
+    |   |   └── main.yml
+    |   └── templates
+    |       └── haproxy.cfg.j2
+    ├── keepalived
+    |   ├── tasks
+    |   │   └── main.yml
+    |   └── templates
+    |       └── keepalived.conf.j2
     ├── kubeadm
     │   └── tasks
     │       └── main.yml
@@ -71,6 +81,13 @@ ansible-k8s/
     │   │   └── main.yml
     │   └── tasks
     │       └── main.yml
+    ├── masterha
+    │   ├── handlers
+    │   │   └── main.yml
+    │   ├── tasks
+    │   │   └── main.yml
+    |   └── templates
+    |       └── kubeadm-config.yaml.j2
     ├── node
     │   └── tasks
     │       └── main.yml
@@ -101,6 +118,23 @@ node3 ansible_host=10.64.41.15
 ...
 ```
 
+In the eventually you want an HighAvailability Master the inventory shoul be in thi format:
+```
+[master]
+master1 ansible_host=10.64.41.16
+master2 ansible_host=10.64.41.17
+master3 ansible_host=10.64.41.18
+
+[node]
+node1 ansible_host=10.64.41.11
+node2 ansible_host=10.64.41.12
+node3 ansible_host=10.64.41.15
+
+[all:vars]
+keepalived_vip=10.64.41.100
+...
+```
+
 Add your SSH key to the ssh-agent
 
 ```
@@ -111,14 +145,21 @@ Agent pid 59566
 ```
 or
 ```
-# ssh-add your_cert.pem
+# ssh-add ~/your_cert.pem
 ```
 
-Finally execute:
+If you want 1 master finally execute:
 
 ```
 # ansible-playbook -i inventory deploy_k8s.yaml
 ```
+
+If you want 3 masters in HA finally execute:
+
+```
+# ansible-playbook -i inventory deploy_k8s_ha.yaml
+```
+
 
 ## Deployment on an OpenStack cloud
 
@@ -131,17 +172,17 @@ Verify if the 'shade' Python module is available on your environment, otherwise 
 $ pip install shade
 ```
 
-Add your SSH private key to the ssh-agent. Please use the same key associated to your OpenStack Key Pair and by which you can login your VM using ssh -i cloud.key <username>@<instance_ip>
+Add your SSH key to the ssh-agent
 
 ```
 # eval "$(ssh-agent -s)"
 Agent pid 59566
 
-# ssh-add cloud.key
+# ssh-add ~/.ssh/id_rsa
 ```
 or
 ```
-# ssh-add your_cert.pem
+# ssh-add ~/your_cert.pem
 ```
 
 Finally execute:
@@ -160,7 +201,6 @@ There are two different ways to access the Kubernetes cluster: by the kubectl or
 The kubectl command line tool is available on the master node. If you wish to access the cluster remotely please see the following guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/.
 In case of Kubernetes has been deployed on OpenStack, you can enable your local kubectl to access the cluster through the Keystone authentication. To do it, copy all files contained into the folder ansible-k8s/config/ to $HOME/.kube/ . The tls-ca-bundle.pem file is CA certificate required by the CloudVeneto OpenStack base cloud. Do not forget to source the openrc.sh with your Openstack credentials and OS_CACERT variable set. Please use your CA certificate, if required.
 Edit $HOME/.kube/config and set the IP address of your new K8S master.
-
 
 ### By dashboards
 The cluster exposes the following dashboards:
@@ -273,3 +313,4 @@ The port number is reported by the following command
 ```
 kubectl --namespace spark-operator get service kcluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}{"\n"}'
 ```
+

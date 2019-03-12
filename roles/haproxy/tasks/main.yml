@@ -1,0 +1,71 @@
+---
+- name: Ensure dependencies are installed
+  yum: name={{ item }} state=installed
+  with_items:
+    - openssl-devel 
+    - pcre-devel
+    - make
+    - gcc
+    - socat
+  when: ansible_os_family == "RedHat"
+
+- name: Ensure dependencies are installed
+  apt: name={{ item }} state=installed
+  with_items:
+    - build-essential
+    - zlib1g-dev 
+    - libpcre3-dev
+    - libssl-dev
+    - socat
+  when: ansible_os_family == "Debian"
+
+- name: Ensure haproxy is installed 
+  apt: name={{ item }} state=installed
+  with_items:
+    - haproxy
+  when: ansible_os_family == "Debian"
+
+- name: Ensure haproxy is installed
+  yum: name={{ item }} state=installed
+  with_items:
+    - haproxy 
+  when: ansible_os_family == "RedHat"
+
+- name: Ensure haproxy user is enabled
+  user: name={{ haproxy_user }} shell=/sbin/nologin
+
+- name: Ensure haproxy directory is present
+  file: path={{ item }} state=directory
+  with_items:
+    - "/etc/haproxy"
+    - "/var/lib/haproxy"
+
+- name: resolve master0 ip
+  command: "dig +short -x {{ hostvars[groups['master'][0]]['ansible_host'] }}"
+  register: master0_host
+
+- name: resolve master1 ip
+  command: "dig +short -x {{ hostvars[groups['master'][1]]['ansible_host'] }}"
+  register: master1_host
+
+- name: resolve master2 ip
+  command: "dig +short -x {{ hostvars[groups['master'][2]]['ansible_host'] }}"
+  register: master2_host
+
+- name: Ensure haproxy conf is set
+  template: >
+    src=templates/haproxy.cfg.j2
+    dest=/etc/haproxy/haproxy.cfg
+
+- name: Ensure nonlocal bind kernel parameter is set
+  sysctl: >
+    name=net.ipv4.ip_nonlocal_bind
+    value=1
+    state=present
+    ignoreerrors=yes
+
+- name: Ensure haproxy is started
+  service: >
+    name=haproxy 
+    state=started
+    enabled=yes

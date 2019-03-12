@@ -1,0 +1,171 @@
+---
+- name: Swapoff the for allow kubeadm to run without warning
+  command: swapoff -a    
+
+- name: Reset kubeadm before init in case this is not the first run
+  command: kubeadm reset -f
+  when: kubeadm_reset_before_init
+  register: reset_cluster
+  
+- name: Create a temporary conf file to inizialize the cluster 
+  template: >
+    src=templates/kubeadm-config.yaml.j2
+    dest=/tmp/kubeadm-config.yaml
+
+- name: kubeadm init with pre generated token
+  when: 
+    - "'master1' in inventory_hostname"
+    - reset_cluster is succeeded
+  shell: |
+    kubeadm init --config=/tmp/kubeadm-config.yaml
+  register: init_cluster
+
+- name: Ensure directory pki and etcd is create
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0775
+  with_items:
+    - /etc/kubernetes/pki
+    - /etc/kubernetes/pki/etcd
+  when: 
+    - "'master2' in inventory_hostname"
+
+- name: Ensure directory pki and etcd is create
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0775
+  with_items:
+    - /etc/kubernetes/pki
+    - /etc/kubernetes/pki/etcd
+  when:
+    - "'master3' in inventory_hostname"
+
+- name: Transfer file from master1 to the buffer in anasible host executor
+  fetch: src="{{ item }}" dest=buffer/"{{ item }}" flat=yes
+  with_items:
+    - /etc/kubernetes/pki/ca.crt
+    - /etc/kubernetes/pki/ca.key
+    - /etc/kubernetes/pki/sa.pub
+    - /etc/kubernetes/pki/sa.key
+    - /etc/kubernetes/pki/front-proxy-ca.crt
+    - /etc/kubernetes/pki/front-proxy-ca.key
+    - /etc/kubernetes/pki/etcd/ca.crt
+    - /etc/kubernetes/pki/etcd/ca.key
+    - /etc/kubernetes/admin.conf
+  when: "'master1' in inventory_hostname"
+
+- name: Transfer file from the buffer to master2 
+  copy: src=buffer/"{{ item }}" dest="{{ item }}"
+  with_items:
+    - /etc/kubernetes/pki/ca.crt
+    - /etc/kubernetes/pki/ca.key
+    - /etc/kubernetes/pki/sa.pub
+    - /etc/kubernetes/pki/sa.key
+    - /etc/kubernetes/pki/front-proxy-ca.crt
+    - /etc/kubernetes/pki/front-proxy-ca.key
+    - /etc/kubernetes/pki/etcd/ca.crt
+    - /etc/kubernetes/pki/etcd/ca.key
+    - /etc/kubernetes/admin.conf
+  when: "'master2' in inventory_hostname"
+
+- name: Transfer file from the buffer to master3 
+  copy: src=buffer/"{{ item }}" dest="{{ item }}"
+  with_items:
+    - /etc/kubernetes/pki/ca.crt
+    - /etc/kubernetes/pki/ca.key
+    - /etc/kubernetes/pki/sa.pub
+    - /etc/kubernetes/pki/sa.key
+    - /etc/kubernetes/pki/front-proxy-ca.crt
+    - /etc/kubernetes/pki/front-proxy-ca.key
+    - /etc/kubernetes/pki/etcd/ca.crt
+    - /etc/kubernetes/pki/etcd/ca.key
+    - /etc/kubernetes/admin.conf
+  when: "'master3' in inventory_hostname"
+
+- name: allow permissive RBAC rules
+  when: 
+    - init_cluster
+    - "'master1' in inventory_hostname"
+  command: "kubectl --kubeconfig /etc/kubernetes/admin.conf create clusterrolebinding permissive-binding \
+  --clusterrole=cluster-admin \
+  --user=admin \
+  --user=kubelet \
+  --group=system:serviceaccounts"
+
+- name: install flannel pod network
+  when:
+    - init_cluster
+    - "'master1' in inventory_hostname"
+  command: kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+- name: Create Kubernetes config directory
+  become: false
+  file: path="~/.kube/" state=directory
+
+- name: Change permissions of .kube/config
+  file: path=/etc/kubernetes/admin.conf mode=0775
+
+- name: Copy admin.conf to Home directory
+  when: init_cluster and ansible_user is defined
+  become: false
+  copy:
+    src: "{{ kubeadmin_config }}"
+    dest: "~/.kube/config"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0755
+    remote_src: True
+
+- name: Enable and restart kubelet engine
+  systemd:
+    name: kubelet
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+  register: started_kubelet
+
+- name: Calculate the K8S CA CERT HASH
+  when: 
+    - init_cluster and started_kubelet
+    - "'master1' in inventory_hostname"
+  shell: openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d ' ' -f1
+  register: k8s_ca_cert_hash
+
+- name: "Add K8S Token and Hash to dummy host"
+  add_host:
+    name:   "K8S_TOKEN_HOLDER"
+    hash:   "{{ k8s_ca_cert_hash.stdout }}"
+
+- name: Join the master2 to the cluster
+  command: kubeadm join {{ keepalived_vip }}:6443 --token {{ kubeadm_token }} --discovery-token-ca-cert-hash sha256:"{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}" --experimental-control-plane
+  when: "'master2' in inventory_hostname"
+
+- name: Join the master3 to the cluster
+  command: kubeadm join {{ keepalived_vip }}:6443 --token {{ kubeadm_token }} --discovery-token-ca-cert-hash sha256:"{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}" --experimental-control-plane
+  when: "'master3' in inventory_hostname"
+
+- name: Deploy the kubernetes dashboard
+  when: init_cluster and started_kubelet and enable_dashboard
+  command: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \
+        apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
+  register: create_result
+  until: create_result.rc == 0
+  retries: 5
+  delay: 2
+
+- name: Setup the kubernetes dashboard
+  when: init_cluster and started_kubelet and enable_dashboard
+  command: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \
+        apply -f https://raw.githubusercontent.com/zangrand/ansible-k8s/master/k8s/dashboard-setup.yaml
+  register: create_result
+  until: create_result.rc == 0
+  retries: 5
+  delay: 2
