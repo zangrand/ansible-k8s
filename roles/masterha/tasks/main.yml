@@ -14,7 +14,7 @@
 
 - name: kubeadm init with pre generated token
   when: 
-    - "'master1' in inventory_hostname"
+    - "'master' in inventory_hostname"
     - reset_cluster is succeeded
   shell: |
     kubeadm init --config=/tmp/kubeadm-config.yaml
@@ -46,7 +46,7 @@
   when:
     - "'master3' in inventory_hostname"
 
-- name: Transfer file from master1 to the buffer in anasible host executor
+- name: Transfer file from master to the buffer in anasible host executor
   fetch: src="{{ item }}" dest=buffer/"{{ item }}" flat=yes
   with_items:
     - /etc/kubernetes/pki/ca.crt
@@ -58,7 +58,7 @@
     - /etc/kubernetes/pki/etcd/ca.crt
     - /etc/kubernetes/pki/etcd/ca.key
     - /etc/kubernetes/admin.conf
-  when: "'master1' in inventory_hostname"
+  when: "'master' in inventory_hostname"
 
 - name: Transfer file from the buffer to master2 
   copy: src=buffer/"{{ item }}" dest="{{ item }}"
@@ -91,7 +91,7 @@
 - name: allow permissive RBAC rules
   when: 
     - init_cluster
-    - "'master1' in inventory_hostname"
+    - "'master' in inventory_hostname"
   command: "kubectl --kubeconfig /etc/kubernetes/admin.conf create clusterrolebinding permissive-binding \
   --clusterrole=cluster-admin \
   --user=admin \
@@ -101,7 +101,7 @@
 - name: install flannel pod network
   when:
     - init_cluster
-    - "'master1' in inventory_hostname"
+    - "'master' in inventory_hostname"
   command: kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
 - name: Create Kubernetes config directory
@@ -133,7 +133,7 @@
 - name: Calculate the K8S CA CERT HASH
   when: 
     - init_cluster and started_kubelet
-    - "'master1' in inventory_hostname"
+    - "'master' in inventory_hostname"
   shell: openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d ' ' -f1
   register: k8s_ca_cert_hash
 

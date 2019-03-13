@@ -121,7 +121,7 @@ node3 ansible_host=10.64.41.15
 In the eventually you want an HighAvailability Master the inventory shoul be in thi format:
 ```
 [master]
-master1 ansible_host=10.64.41.16
+master ansible_host=10.64.41.16
 master2 ansible_host=10.64.41.17
 master3 ansible_host=10.64.41.18
 
