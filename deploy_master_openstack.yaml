@@ -2,7 +2,9 @@
   hosts: localhost
   vars_files:
     - openstack_config.yaml
-    
+  vars:
+    os_fip: "{{ OS_FIP|default('undefined') }}"
+
   environment:
     OS_AUTH_URL: "{{ OS_AUTH_URL }}"
     OS_PROJECT_NAME: "{{ OS_PROJECT_NAME }}"
@@ -14,7 +16,6 @@
     OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
     OS_CACERT: "{{ OS_CACERT }}"
     OS_INTERFACE: "{{ OS_INTERFACE }}"
-    OS_FIP: "{{ OS_FIP | default('undefined') }}"
     
   tasks:
   - name: Create the K8S security group
@@ -75,9 +76,10 @@
         name: "{{ item.server.name }}"
         groups: "{{ item.server.metadata.group }}"
         ansible_host: "{{ item.server.private_v4 }}"
+        main_cluster_node: true
       with_items: "{{ server.results }}"
 
-    when: "OS_FIP == 'undefined'"
+    when: "os_fip == 'undefined'"
 
   - name: VM on public network
     block:
@@ -120,9 +122,10 @@
         name: "{{ item.server.name }}"
         groups: "{{ item.server.metadata.group }}"
         ansible_host: "{{ OS_FIP }}"
+        main_cluster_node: true
       with_items: "{{ server.results }}"
 
-    when: "OS_FIP != 'undefined'"
+    when: "os_fip != 'undefined'"
 
 - name: Install Kubernetes
   import_playbook: deploy_k8s.yaml
