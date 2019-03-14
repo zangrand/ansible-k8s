@@ -32,7 +32,7 @@
     - command: |
         kubectl --kubeconfig={{ kubeadmin_config }} apply -f ./strimzi-{{ strimziver }}/install/cluster-operator -n {{ projectns }}
   when:
-    "'master' in inventory_hostname"
+    "'master' == inventory_hostname or 'master1' == inventory_hostname"
   rescue:
     - debug:
         msg: "Cannot deploy Kafka operator"
