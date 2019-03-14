@@ -14,6 +14,7 @@
     OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
     OS_CACERT: "{{ OS_CACERT }}"
     OS_INTERFACE: "{{ OS_INTERFACE }}"
+    OS_FIP: "{{ OS_FIP | default('undefined') }}"
     
   tasks:
   - name: Create the K8S security group
@@ -34,39 +35,94 @@
      - udp
      - icmp
 
-  - name: Launch a VM
-    os_server:
-      state: present
-      name: "{{ item.name }}"
-      image: "{{ item.image }}"
-      key_name: "{{ item.key_name }}"
-      availability_zone: nova
-      flavor: "{{ item.flavor}}"
-      network: "{{ item.network}}"
-      security_groups: "{{ item.security_group }}"
-      meta: "group={{ item.group }}"
-      auto_ip: no
-      reuse_ips: no
-    register: server
-    with_items:
-            - { name: "{{ OS_MASTER_NAME }}", image: "{{ OS_MASTER_IMAGE }}", flavor: "{{ OS_MASTER_FLAVOR }}", security_group: "{{ OS_SECURITY_GROUP }}", key_name: "{{ OS_KEY_NAME }}", network: "{{ OS_NETWORK }}", group: 'master' }
+  - name: VM on private network
+    block:
 
-  - name: Wait for SSH on the Instance
-    command: >
-      ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@{{item.server.private_v4}} true
-    with_items: "{{ server.results }}"
-    register: result
-    until: result is success
-    retries: 30
-    delay: 10
+    - name: Launch a VM on private network
+      os_server:
+        state: present
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        key_name: "{{ item.key_name }}"
+        availability_zone: nova
+        flavor: "{{ item.flavor }}"
+        network: "{{ item.network }}"
+        security_groups: "{{ item.security_group }}"
+        meta: "group={{ item.group }}"
+        auto_ip: no
+        reuse_ips: no
+      register: server
+      with_items:
+        - name: "{{ OS_MASTER_NAME }}"
+          image: "{{ OS_MASTER_IMAGE }}"
+          flavor: "{{ OS_MASTER_FLAVOR }}"
+          security_group: "{{ OS_SECURITY_GROUP }}"
+          key_name: "{{ OS_KEY_NAME }}"
+          network: "{{ OS_NETWORK }}"
+          group: 'master'
 
-  - name: Add VM to inventory
-    add_host:
-      name: "{{ item.server.name }}"
-      groups: "{{ item.server.metadata.group }}"
-      ansible_host: "{{ item.server.private_v4 }}"
-    with_items: "{{ server.results }}"
+    - name: Wait for SSH on the Instance
+      command: >
+        ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@{{item.server.private_v4}} true
+      with_items: "{{ server.results }}"
+      register: result
+      until: result is success
+      retries: 30
+      delay: 10
 
+    - name: Add VM to inventory
+      add_host:
+        name: "{{ item.server.name }}"
+        groups: "{{ item.server.metadata.group }}"
+        ansible_host: "{{ item.server.private_v4 }}"
+      with_items: "{{ server.results }}"
+
+    when: "OS_FIP == 'undefined'"
+
+  - name: VM on public network
+    block:
+
+    - name: Launch a VM on public network
+      os_server:
+        state: present
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        key_name: "{{ item.key_name }}"
+        availability_zone: nova
+        flavor: "{{ item.flavor }}"
+        network: "{{ item.network }}"
+        floating_ips: [ "{{ item.fip }}" ]
+        security_groups: "{{ item.security_group }}"
+        meta: "group={{ item.group }}"
+        reuse_ips: no
+      register: server
+      with_items:
+        - name: "{{ OS_MASTER_NAME }}"
+          image: "{{ OS_MASTER_IMAGE }}"
+          flavor: "{{ OS_MASTER_FLAVOR }}"
+          security_group: "{{ OS_SECURITY_GROUP }}"
+          key_name: "{{ OS_KEY_NAME }}"
+          network: "{{ OS_NETWORK }}"
+          fip: "{{ OS_FIP }}"
+          group: 'master'
+
+    - name: Wait for SSH on the Instance
+      command: >
+        ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@"{{ OS_FIP }}" true
+      with_items: "{{ server.results }}"
+      register: result
+      until: result is success
+      retries: 30
+      delay: 10
+
+    - name: Add VM to inventory
+      add_host:
+        name: "{{ item.server.name }}"
+        groups: "{{ item.server.metadata.group }}"
+        ansible_host: "{{ OS_FIP }}"
+      with_items: "{{ server.results }}"
+
+    when: "OS_FIP != 'undefined'"
 
 - name: Install Kubernetes
   import_playbook: deploy_k8s.yaml
