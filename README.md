@@ -255,7 +255,7 @@ apiVersion: kafka.strimzi.io/v1alpha1
 kind: Kafka
 metadata:
   name: kcluster
-  namespace: spark-operator
+  namespace: default
 spec:
   kafka:
     replicas: 3
@@ -285,7 +285,7 @@ and then run
 ```
 # kubectl apply -f kcluster.yaml
 ```
-The namespace must be the same declared for the spark operator.
+The namespace in this case is set to default.
 For further details see https://strimzi.io/docs/master/#assembly-deployment-configuration-str
 
 A topic for the Kafka cluster can be declared with the following yaml file, ktopic.yaml:
@@ -294,7 +294,7 @@ apiVersion: kafka.strimzi.io/v1alpha1
 kind: KafkaTopic
 metadata:
   name: ktopic
-  namespace: spark-operator
+  namespace: default
   labels:
     strimzi.io/cluster: kcluster
 spec:
@@ -311,6 +311,6 @@ and then running
 Kubernetes provides a port on the master for accessing the created cluster.
 The port number is reported by the following command
 ```
-kubectl --namespace spark-operator get service kcluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}{"\n"}'
+kubectl get service kcluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}{"\n"}'
 ```
 
