@@ -30,6 +30,10 @@ ansible-k8s/
 │   ├── config
 │   ├── keystone_client.py
 │   └── tls-ca-bundle.pem
+├── examples
+│   ├── spark-pi.yaml
+│   ├── kcluster.yaml
+│   └── ktopic.yaml
 ├── deploy_k8s.yaml
 ├── deploy_master_openstack.yaml
 ├── deploy_node_openstack.yaml
@@ -249,68 +253,45 @@ Pi is roughly 3.1458557292786464
 ```
 ### Creating a Kafka cluster with a topic
 
-Declare the cluster structure in a yaml file, kcluster.yaml, like:
-```
-apiVersion: kafka.strimzi.io/v1alpha1
-kind: Kafka
-metadata:
-  name: kcluster
-  namespace: default
-spec:
-  kafka:
-    replicas: 3
-    listeners:
-      #plain: {}
-      #tls: {}
-      external:
-        type: nodeport
-        tls: false
-    config:
-      offsets.topic.replication.factor: 3
-      transaction.state.log.replication.factor: 3
-      transaction.state.log.min.isr: 2
-    storage:
-      type: ephemeral
-  zookeeper:
-    replicas: 3
-    storage:
-      type: ephemeral
-  entityOperator:
-    topicOperator:
-      watchedNamespace: spark-operator
-      zookeeperSessionTimeoutSeconds: 60
-    userOperator: {}
-```
-and then run
+Declare the cluster structure as in the kcluster.yaml file taken from the examples directory, and execute the following kubectl command: 
 ```
 # kubectl apply -f kcluster.yaml
 ```
-The namespace in this case is set to default.
-For further details see https://strimzi.io/docs/master/#assembly-deployment-configuration-str
+For further details on configuration see https://strimzi.io/docs/master/#assembly-deployment-configuration-str
 
-A topic for the Kafka cluster can be declared with the following yaml file, ktopic.yaml:
-```
-apiVersion: kafka.strimzi.io/v1alpha1
-kind: KafkaTopic
-metadata:
-  name: ktopic
-  namespace: default
-  labels:
-    strimzi.io/cluster: kcluster
-spec:
-  partitions: 1
-  replicas: 1
-  config:
-    retention.ms: 7200000
-    segment.bytes: 1073741824
-```
-and then running
+A topic for the Kafka cluster can be declared as in the ktopic.yaml file taken from the examples directory, and created by executing the following kubectl command:
 ```
 # kubectl apply -f ktopic.yaml
 ```
 Kubernetes provides a port on the master for accessing the created cluster.
-The port number is reported by the following command
+The port number is reported by the following kubectl command:
 ```
 kubectl get service kcluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}{"\n"}'
 ```
+Other useful commands for monitor the status of the cluster are:
+```
+# kubectl get service
+NAME                                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+kcluster-kafka-0                        NodePort    10.97.1.118      <none>        9094:31945/TCP               64s
+kcluster-kafka-1                        NodePort    10.100.252.199   <none>        9094:31730/TCP               64s
+kcluster-kafka-2                        NodePort    10.106.128.149   <none>        9094:31608/TCP               64s
+kcluster-kafka-bootstrap                ClusterIP   10.109.113.86    <none>        9091/TCP                     65s
+kcluster-kafka-brokers                  ClusterIP   None             <none>        9091/TCP                     65s
+kcluster-kafka-external-bootstrap       NodePort    10.107.133.0     <none>        9094:32161/TCP               64s
+kcluster-zookeeper-client               ClusterIP   10.103.223.73    <none>        2181/TCP                     93s
+kcluster-zookeeper-nodes                ClusterIP   None             <none>        2181/TCP,2888/TCP,3888/TCP   93s
+kubernetes                              ClusterIP   10.96.0.1        <none>        443/TCP                      3d1h
 
+# kubectl get pod 
+NAME                                            READY   STATUS    RESTARTS   AGE
+kcluster-entity-operator-7b8d767b5c-lh6kp       3/3     Running   0          3m55s
+kcluster-kafka-0                                2/2     Running   0          4m28s
+kcluster-kafka-1                                2/2     Running   0          4m28s
+kcluster-kafka-2                                2/2     Running   0          4m28s
+kcluster-zookeeper-0                            2/2     Running   0          4m56s
+kcluster-zookeeper-1                            2/2     Running   0          4m56s
+kcluster-zookeeper-2                            2/2     Running   0          4m56s
+
+# kubectl get kafkatopics
+NAME                  AGE
+ktopic                12s
