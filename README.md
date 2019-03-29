@@ -291,6 +291,7 @@ kcluster-kafka-2                                2/2     Running   0          4m2
 kcluster-zookeeper-0                            2/2     Running   0          4m56s
 kcluster-zookeeper-1                            2/2     Running   0          4m56s
 kcluster-zookeeper-2                            2/2     Running   0          4m56s
+strimzi-cluster-operator-6464cfd94f-tmbqd       1/1     Running   0          3d1h
 
 # kubectl get kafkatopics
 NAME                  AGE
