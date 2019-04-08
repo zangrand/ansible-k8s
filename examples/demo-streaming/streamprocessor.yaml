@@ -9,7 +9,7 @@ spec:
   image: "gcr.io/spark-operator/spark:v2.4.0"
   imagePullPolicy: Always
   mainClass: ch.cern.StreamProcessor
-  mainApplicationFile: "http://www.pd.infn.it/~verlato/StreamProcessing-1.0-SNAPSHOT.jar"
+  mainApplicationFile: "http://www2.pd.infn.it/~verlato/StreamProcessing-1.0-SNAPSHOT.jar"
   arguments: 
     - "produce28partitions"
     - "occupancyplot"
