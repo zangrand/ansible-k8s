@@ -25,18 +25,12 @@ spec:
                 secretKeyRef:
                   name: keystone-auth-certs
                   key: os_auth_url
-          args:
-            - ./bin/k8s-keystone-auth
-            - --tls-cert-file
-            - /etc/keystone/pki/cert-file
-            - --tls-private-key-file
-            - /etc/keystone/pki/key-file
-            - --policy-configmap-name
-            - k8s-auth-policy
-            - --keystone-url
-            - "$(OS_AUTH_URL)"
-            - --keystone-ca-file
-            - /etc/keystone/pki/ca_cert.pem
+          command: ["./bin/k8s-keystone-auth"]
+          args: ["--tls-cert-file", "/etc/keystone/pki/cert-file",
+            "--tls-private-key-file", "/etc/keystone/pki/key-file",
+            "--policy-configmap-name", "k8s-auth-policy",
+            "--keystone-url", "$(OS_AUTH_URL)",
+            "--keystone-ca-file", "/etc/keystone/pki/ca_cert.pem"]
           volumeMounts:
             - mountPath: /etc/keystone/pki
               name: keystone-auth-certs
