@@ -17,11 +17,17 @@
       reuse_ips: no
     register: server
     with_items:
-            - { name: "{{ lookup('env', 'OS_VM_NAME') }}", image: "{{ lookup('env', 'OS_IMAGE') }}", flavor: "{{ lookup('env', 'OS_FLAVOR') }}", security_group: "{{ lookup('env', 'OS_SECURITY_GROUP') }}", key_name: "{{ lookup('env', 'OS_KEY_NAME') }}", network: "{{ lookup('env', 'OS_NETWORK') }}", group: 'node' }
+        - name: "{{ lookup('env', 'OS_VM_NAME') }}"
+          image: "{{ lookup('env', 'OS_IMAGE') }}"
+          flavor: "{{ lookup('env', 'OS_FLAVOR') }}"
+          security_group: "{{ lookup('env', 'OS_SECURITY_GROUP') }}"
+          key_name: "{{ lookup('env', 'OS_KEY_NAME') }}"
+          network: "{{ lookup('env', 'OS_NETWORK') }}"
+          group: 'node'
 
   - name: Wait for SSH on the Instance
     command: >
-      ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@{{item.server.private_v4}} true
+      ssh -i {{ lookup('env', 'OS_KEY_CERT') }} -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@{{item.server.private_v4}} true
     with_items: "{{ server.results }}"
     register: result
     until: result is success

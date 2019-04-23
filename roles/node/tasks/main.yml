@@ -11,10 +11,17 @@
   when: keepalived_vip is defined
   register: kubeadm_join
 
-- name: kubeadm join with pre generated token to Kubernetes master
-  command: kubeadm join --token {{ kubeadm_token }} {{ hostvars[groups['master'][0]]['ansible_host'] }}:6443 --discovery-token-ca-cert-hash sha256:{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}
-  when:   keepalived_vip is not defined
-  
+- name: kubeadm join with pre generated token to Kubernetes master using private_ip
+  command: kubeadm join --token {{ kubeadm_token }} {{ hostvars[groups['master'][0]]['private_ip'] }}:6443 --discovery-token-ca-cert-hash sha256:{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}
+  when:
+    - "lookup('env', 'K8S_MASTER_HOST') is not defined"
+    - "keepalived_vip is not defined"
+  register: kubeadm_join
+
+- name: kubeadm join with pre generated token to Kubernetes master using K8S_MASTER_HOST
+  command: kubeadm join --token {{ kubeadm_token }} {{ lookup('env', 'K8S_MASTER_HOST') }}:6443 --discovery-token-ca-cert-hash sha256:{{ lookup('env', 'K8S_CA_CERT_HASH') }}
+  when: "lookup('env', 'K8S_MASTER_HOST') is defined"
+  register: kubeadm_join
 
 - name: Enable and restart kubelet engine
   systemd:

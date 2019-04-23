@@ -5,11 +5,11 @@ metadata:
   name: os-k8s-node
   namespace: kube-system
 spec:
-  parallelism: <PARALLELISM>
+  parallelism: {{ OS_NODES }}
   template:
     metadata:
       labels:
-        app: os-k8s-node 
+        app: os-k8s-node
     spec:
       containers:
       - name: os-k8s-node
@@ -30,11 +30,21 @@ spec:
             secretKeyRef:
               name: os-k8s-node
               key: K8S_CA_CERT_HASH
-        - name:  OS_AUTH_URL
+        - name: OS_AUTH_URL
           valueFrom:
             secretKeyRef:
               name: os-k8s-node
               key: OS_AUTH_URL
+        - name: OS_AUTH_TYPE
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_AUTH_TYPE
+        - name: OS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: os-k8s-node
+              key: OS_TOKEN
         - name: OS_PROJECT_ID
           valueFrom:
             secretKeyRef:
@@ -45,11 +55,6 @@ spec:
             secretKeyRef:
               name: os-k8s-node
               key: OS_PROJECT_NAME
-        - name: OS_USER_DOMAIN_NAME
-          valueFrom:
-            secretKeyRef:
-              name: os-k8s-node
-              key: OS_USER_DOMAIN_NAME
         - name: OS_CACERT
           valueFrom:
             secretKeyRef:
