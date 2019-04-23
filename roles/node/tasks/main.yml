@@ -12,8 +12,8 @@
   register: kubeadm_join
 
 - name: kubeadm join with pre generated token to Kubernetes master
-  command: kubeadm join --token {{ kubeadm_token }} {{ hostvars[groups['master'][0]]['ansible_host'] }}:6443 --discovery-token-ca-cert-hash sha256:{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}
-  when:   keepalived_vip is not defined
+  command: kubeadm join --token {{ kubeadm_token }} {{ hostvars[groups['master'][0]]['private_ip'] }}:6443 --discovery-token-ca-cert-hash sha256:{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}
+  when: keepalived_vip is not defined
   
 
 - name: Enable and restart kubelet engine

@@ -76,6 +76,7 @@
         name: "{{ item.server.name }}"
         groups: "{{ item.server.metadata.group }}"
         ansible_host: "{{ item.server.private_v4 }}"
+        private_ip: "{{ item.server.private_v4 }}"
         main_cluster_node: true
       with_items: "{{ server.results }}"
 
@@ -122,6 +123,7 @@
         name: "{{ item.server.name }}"
         groups: "{{ item.server.metadata.group }}"
         ansible_host: "{{ OS_FIP }}"
+        private_ip: "{{ item.server.private_v4 }}"
         main_cluster_node: true
       with_items: "{{ server.results }}"
 
