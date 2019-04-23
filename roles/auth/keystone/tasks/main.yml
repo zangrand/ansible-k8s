@@ -16,9 +16,9 @@
             --clusterrole=cluster-admin \
             --serviceaccount=kube-system:default
   register: create_result
-  
-  
-- name: Create the keystone-auth-certs secret 
+
+
+- name: Create the keystone-auth-certs secret
   when: init_cluster and started_kubelet
   become: yes
   command: |
@@ -31,14 +31,14 @@
         -n kube-system
   register: create_result
 
-      
+
 - name: Get the k8s-auth-policy.yaml file
   when: init_cluster and started_kubelet
   become: no
   get_url:
     url: https://raw.githubusercontent.com/zangrand/ansible-k8s/master/roles/auth/keystone/files/k8s-auth-policy.yaml
     dest: .
-    
+
 
 - name: Change the OS_PROJECT var in k8s-auth-policy.yaml
   when: init_cluster and started_kubelet
@@ -68,16 +68,16 @@
         apply -f https://raw.githubusercontent.com/zangrand/ansible-k8s/master/roles/auth/keystone/files/k8s-keystone-auth.yaml
   register: create_result
 
-  
-- name: Update /etc/kubernetes/manifests/kube-apiserver.yaml with webhook config 
+
+- name: Update /etc/kubernetes/manifests/kube-apiserver.yaml with webhook config
   when: init_cluster and started_kubelet
   replace:
     path: /etc/kubernetes/manifests/kube-apiserver.yaml
     regexp: "Node,RBAC"
     replace: "Node,Webhook,RBAC"
   register: create_result
-  
-  
+
+
 - name: Set the webhook options in /etc/kubernetes/manifests/kube-apiserver.yaml
   lineinfile:
     path: /etc/kubernetes/manifests/kube-apiserver.yaml

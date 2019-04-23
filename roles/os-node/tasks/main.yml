@@ -46,7 +46,7 @@
   register: create_result
 
 
-- name: Ensure keepalived conf is set
+- name: Ensure os-k8s-node.yaml is set
   template:
     src=templates/os-k8s-node.yaml.j2
     dest=os-k8s-node.yaml
