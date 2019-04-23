@@ -1,4 +1,6 @@
 
+haproxy_user: haproxy
+
 kubeadm_token: decaf2.c61dd19a426515ec
 
 flannel_subnet: 10.244.0.0/16

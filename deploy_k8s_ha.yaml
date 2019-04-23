@@ -1,0 +1,37 @@
+---
+# This playbook deploys a simple kubeadm install.
+- name: Bootstrap Tasks
+  hosts: all
+  remote_user: ubuntu
+  become: yes
+  become_method: sudo
+  gather_facts: False
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3"
+  roles:
+    - common
+
+- name: Install Kubernetes master
+  hosts: master
+  remote_user: ubuntu
+  become: yes
+  become_method: sudo
+  roles:
+    - docker
+    - keepalived
+    - haproxy
+    - kubeadm
+    - masterha
+    - prometheus
+    - spark
+    - kafka
+
+- name: Install nodes
+  remote_user: ubuntu
+  hosts: node
+  become: yes
+  become_method: sudo
+  roles:
+    - docker
+    - kubeadm
+    - node
