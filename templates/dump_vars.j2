@@ -1,0 +1,111 @@
+{% if OS_AUTH_URL is defined %}
+OS_AUTH_URL: "{{ OS_AUTH_URL }}"
+{% endif %}
+
+{% if OS_AUTH_TYPE is defined %}
+OS_AUTH_TYPE: "{{ OS_AUTH_TYPE | default('password') }}"
+{% endif %}
+
+{% if OS_PROJECT_NAME is defined %}
+OS_PROJECT_NAME: "{{ OS_PROJECT_NAME }}"
+{% endif %}
+
+{% if OS_PROJECT_ID is defined %}
+OS_PROJECT_ID: "{{ OS_PROJECT_ID }}"
+{% endif %}
+
+{% if OS_USERNAME is defined %}
+OS_USERNAME: "{{ OS_USERNAME }}"
+{% endif %}
+
+{% if OS_PASSWORD is defined %}
+OS_PASSWORD: "{{ OS_PASSWORD }}"
+{% endif %}
+
+{% if OS_TOKEN is defined %}
+OS_TOKEN: "{{ OS_TOKEN }}"
+{% endif %}
+
+{% if OS_INTERFACE is defined %}
+OS_INTERFACE: "{{ OS_INTERFACE }}"
+{% endif %}
+
+{% if OS_REGION_NAME is defined %}
+OS_REGION_NAME: "{{ OS_REGION_NAME }}"
+{% endif %}
+
+{% if OS_IDENTITY_API_VERSION is defined %}
+OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
+{% endif %}
+
+{% if OS_CACERT is defined %}
+OS_CACERT: "{{ OS_CACERT }}"
+{% endif %}
+
+{% if OS_NETWORK is defined %}
+OS_NETWORK: "{{ OS_NETWORK }}"
+{% endif %}
+
+{% if OS_SECURITY_GROUP is defined %}
+OS_SECURITY_GROUP: "{{ OS_SECURITY_GROUP }}"
+{% endif %}
+
+{% if OS_KEY_NAME is defined %}
+OS_KEY_NAME: "{{ OS_KEY_NAME }}"
+{% endif %}
+
+{% if OS_KEY_PUBLIC is defined %}
+OS_KEY_PUBLIC: "{{ OS_KEY_PUBLIC }}"
+{% endif %}
+
+{% if OS_KEY_PRIVATE is defined %}
+OS_KEY_PRIVATE: "{{ OS_KEY_PRIVATE }}"
+{% endif %}
+
+{% if OS_MASTER_NAME is defined %}
+OS_MASTER_NAME: "{{ OS_MASTER_NAME }}"
+{% endif %}
+
+{% if OS_MASTER_IMAGE is defined %}
+OS_MASTER_IMAGE: "{{ OS_MASTER_IMAGE }}"
+{% endif %}
+
+{% if OS_MASTER_FLAVOR is defined %}
+OS_MASTER_FLAVOR: "{{ OS_MASTER_FLAVOR }}"
+{% endif %}
+
+{% if OS_NODE_NAME is defined %}
+OS_NODE_NAME: "{{ OS_NODE_NAME }}"
+{% endif %}
+
+{% if OS_NODE_IMAGE is defined %}
+OS_NODE_IMAGE: "{{ OS_NODE_IMAGE }}"
+{% endif %}
+
+{% if OS_NODE_FLAVOR is defined %}
+OS_NODE_FLAVOR: "{{ OS_NODE_FLAVOR }}"
+{% endif %}
+
+{% if OS_NODES is defined %}
+OS_NODES: "{{ OS_NODES }}"
+{% endif %}
+
+{% if VOMS_PROXY is defined %}
+VOMS_PROXY: "{{ VOMS_PROXY }}"
+{% endif %}
+
+{% if EGI_CHECKIN_URL is defined %}
+EGI_CHECKIN_URL: "{{ EGI_CHECKIN_URL }}"
+{% endif %}
+
+{% if EGI_CHECKIN_CLIENT_ID is defined %}
+EGI_CHECKIN_CLIENT_ID: "{{ EGI_CHECKIN_CLIENT_ID }}"
+{% endif %}
+
+{% if EGI_CHECKIN_CLIENT_SECRET is defined %}
+EGI_CHECKIN_CLIENT_SECRET: "{{ EGI_CHECKIN_CLIENT_SECRET }}"
+{% endif %}
+
+{% if EGI_CHECKIN_REFRESH_TOKEN is defined %}
+EGI_CHECKIN_REFRESH_TOKEN: "{{ EGI_CHECKIN_REFRESH_TOKEN }}"
+{% endif %}

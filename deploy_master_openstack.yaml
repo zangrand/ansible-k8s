@@ -1,148 +1,140 @@
 - name: Launch a compute instance
   hosts: localhost
+
   vars_files:
     - openstack_config.yaml
-  vars:
-    os_fip: "{{ OS_FIP|default('undefined') }}"
 
   environment:
     OS_AUTH_URL: "{{ OS_AUTH_URL }}"
+    OS_AUTH_TYPE: "{{ OS_AUTH_TYPE | default('password') }}"
     OS_PROJECT_NAME: "{{ OS_PROJECT_NAME }}"
     OS_PROJECT_ID: "{{ OS_PROJECT_ID }}"
-    OS_USER_DOMAIN_NAME: "{{ OS_USER_DOMAIN_NAME }}"
-    OS_USERNAME: "{{ OS_USERNAME }}"
-    OS_PASSWORD: "{{ OS_PASSWORD }}"
+    OS_USERNAME: "{{ OS_USERNAME|default('NA') }}"
+    OS_PASSWORD: "{{ OS_PASSWORD|default('NA') }}"
     OS_REGION_NAME: "{{ OS_REGION_NAME }}"
     OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
     OS_CACERT: "{{ OS_CACERT }}"
-    OS_INTERFACE: "{{ OS_INTERFACE }}"
-    
+
   tasks:
+  - name: Get OS token
+    environment:
+      OS_AUTH_URL: "{{ OS_AUTH_URL }}"
+      OS_AUTH_TYPE: "{{ OS_AUTH_TYPE }}"
+      OS_USERNAME: "{{ OS_USERNAME }}"
+      OS_PASSWORD: "{{ OS_PASSWORD }}"
+      VOMS_PROXY: "{{ VOMS_PROXY }}"
+      EGI_CHECKIN_URL: "{{ EGI_CHECKIN_URL }}"
+      EGI_CHECKIN_CLIENT_ID: "{{ EGI_CHECKIN_CLIENT_ID }}"
+      EGI_CHECKIN_CLIENT_SECRET: "{{ EGI_CHECKIN_CLIENT_SECRET }}"
+      EGI_CHECKIN_REFRESH_TOKEN: "{{ EGI_CHECKIN_REFRESH_TOKEN }}"
+    command: python ./keystone_client.py
+    register: token
+
+  - set_fact:
+      OS_TOKEN: "{{ (token.stdout|from_json).status.token }}"
+      OS_USERNAME: "{{ (token.stdout|from_json).user }}"
+
+  - name: Dump all vars
+    action: template src=templates/dump_vars.j2 dest=dump_vars.yaml
+
   - name: Create the K8S security group
-    os_security_group:
+    environment:
+      OS_TOKEN: "{{ OS_TOKEN }}"
+
+    block:
+    - name: Create the security group
+      os_security_group:
+        state: present
+        name: K8S-SG
+        description: security group for K8S cluster
+
+    - name: Add new rule to the K8S Security Group allowing any protocol
+      os_security_group_rule:
+        security_group: K8S-SG
+        protocol: "{{ item }}"
+        port_range_min: -1
+        port_range_max: -1
+        remote_ip_prefix: 0.0.0.0/0
+      with_items:
+        - tcp
+        - udp
+        - icmp
+
+
+  - name: Create the key pair with the specified public key
+    environment:
+      OS_TOKEN: "{{ OS_TOKEN }}"
+    os_keypair:
       state: present
-      name: K8S-SG
-      description: security group for K8S cluster
+      name: "{{ OS_KEY_NAME }}"
+      public_key_file: "{{ OS_KEY_PUBLIC }}"
+    when: "OS_KEY_PUBLIC is defined"
 
-  - name: Add new rule to the K8S Security Group allowing any protocol
-    os_security_group_rule:
-      security_group: K8S-SG
-      protocol: "{{ item }}"
-      port_range_min: -1
-      port_range_max: -1
-      remote_ip_prefix: 0.0.0.0/0
-    with_items:
-     - tcp
-     - udp
-     - icmp
 
-  - name: VM on private network
-    block:
+  - name: Create the VM instance
+    environment:
+      OS_TOKEN: "{{ OS_TOKEN }}"
+    os_server:
+      state: present
+      name: "{{ OS_MASTER_NAME }}"
+      image: "{{ OS_MASTER_IMAGE }}"
+      key_name: "{{ OS_KEY_NAME }}"
+      flavor: "{{ OS_MASTER_FLAVOR }}"
+      floating_ips: [ "{{ OS_FIP }}" ]
+      network: "{{ OS_NETWORK }}"
+      security_groups: "{{ OS_SECURITY_GROUP }}"
+      availability_zone: nova
+      reuse_ips: no
+    register: server
 
-    - name: Launch a VM on private network
-      os_server:
-        state: present
-        name: "{{ item.name }}"
-        image: "{{ item.image }}"
-        key_name: "{{ item.key_name }}"
-        availability_zone: nova
-        flavor: "{{ item.flavor }}"
-        network: "{{ item.network }}"
-        security_groups: "{{ item.security_group }}"
-        meta: "group={{ item.group }}"
-        auto_ip: no
-        reuse_ips: no
-      register: server
-      with_items:
-        - name: "{{ OS_MASTER_NAME }}"
-          image: "{{ OS_MASTER_IMAGE }}"
-          flavor: "{{ OS_MASTER_FLAVOR }}"
-          security_group: "{{ OS_SECURITY_GROUP }}"
-          key_name: "{{ OS_KEY_NAME }}"
-          network: "{{ OS_NETWORK }}"
-          group: 'master'
+  - set_fact:
+      K8S_MASTER_HOST: "{{ server.openstack.private_v4 }}"
 
-    - name: Wait for SSH on the Instance
-      command: >
-        ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@{{item.server.private_v4}} true
-      with_items: "{{ server.results }}"
-      register: result
-      until: result is success
-      retries: 30
-      delay: 10
 
-    - name: Add VM to inventory
-      add_host:
-        name: "{{ item.server.name }}"
-        groups: "{{ item.server.metadata.group }}"
-        ansible_host: "{{ item.server.private_v4 }}"
-        private_ip: "{{ item.server.private_v4 }}"
-        main_cluster_node: true
-      with_items: "{{ server.results }}"
+  - name: Wait for SSH on the instance (public network)
+    when: "OS_FIP is defined"
+    command: >
+      ssh -i "{{ OS_KEY_PRIVATE }}" -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@"{{ OS_FIP | default(K8S_MASTER_HOST) }}" true
+    register: result
+    until: result is success
+    retries: 30
+    delay: 10
 
-    when: "os_fip == 'undefined'"
 
-  - name: VM on public network
-    block:
+  - name: Add VM to inventory
+    add_host:
+      name: "{{ server.openstack.name }}"
+      groups: master
+      ansible_host: "{{ OS_FIP | default(K8S_MASTER_HOST) }}"
+      private_ip: "{{ K8S_MASTER_HOST }}"
+      ansible_ssh_private_key_file: "{{ OS_KEY_PRIVATE }}"
+      main_cluster_node: true
 
-    - name: Launch a VM on public network
-      os_server:
-        state: present
-        name: "{{ item.name }}"
-        image: "{{ item.image }}"
-        key_name: "{{ item.key_name }}"
-        availability_zone: nova
-        flavor: "{{ item.flavor }}"
-        network: "{{ item.network }}"
-        floating_ips: [ "{{ item.fip }}" ]
-        security_groups: "{{ item.security_group }}"
-        meta: "group={{ item.group }}"
-        reuse_ips: no
-      register: server
-      with_items:
-        - name: "{{ OS_MASTER_NAME }}"
-          image: "{{ OS_MASTER_IMAGE }}"
-          flavor: "{{ OS_MASTER_FLAVOR }}"
-          security_group: "{{ OS_SECURITY_GROUP }}"
-          key_name: "{{ OS_KEY_NAME }}"
-          network: "{{ OS_NETWORK }}"
-          fip: "{{ OS_FIP }}"
-          group: 'master'
 
-    - name: Wait for SSH on the Instance
-      command: >
-        ssh -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@"{{ OS_FIP }}" true
-      with_items: "{{ server.results }}"
-      register: result
-      until: result is success
-      retries: 30
-      delay: 10
+  - name: Display vars
+    debug:
+      msg:
+        - "username: {{ OS_USERNAME }}"
+        - "token: {{ OS_TOKEN }}"
 
-    - name: Add VM to inventory
-      add_host:
-        name: "{{ item.server.name }}"
-        groups: "{{ item.server.metadata.group }}"
-        ansible_host: "{{ OS_FIP }}"
-        private_ip: "{{ item.server.private_v4 }}"
-        main_cluster_node: true
-      with_items: "{{ server.results }}"
-
-    when: "os_fip != 'undefined'"
 
 - name: Install Kubernetes
   import_playbook: deploy_k8s.yaml
 
 
-- name: Install Keystone authentication webhook
+- name: Install Keystone authentication webhook and the nodes
+  gather_facts: false
   hosts: master
   remote_user: ubuntu
   become: yes
   become_method: sudo
-  
-  vars_files:
-    - openstack_config.yaml
-    
-  roles:
-    - os-node
-    - auth/keystone
 
+  vars_files:
+    - dump_vars.yaml
+
+  tasks:
+  - include_role:
+      name: auth/keystone
+
+  - include_role:
+      name: os-node
