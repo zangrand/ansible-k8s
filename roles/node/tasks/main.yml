@@ -7,19 +7,19 @@
   command: kubeadm reset -f
 
 - name: kubeadm join with pre generated token to HA Kubernetes masters
-  command: kubeadm join --token {{ kubeadm_token }} {{ keepalived_vip }}:6443 --discovery-token-ca-cert-hash sha256:{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}
+  command: kubeadm join {{ keepalived_vip }}:6443 --token {{ kubeadm_token }} --discovery-token-ca-cert-hash sha256:{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}
   when: keepalived_vip is defined
   register: kubeadm_join
 
 - name: kubeadm join with pre generated token to Kubernetes master using private_ip
-  command: kubeadm join --token {{ kubeadm_token }} {{ hostvars[groups['master'][0]]['private_ip'] }}:6443 --discovery-token-ca-cert-hash sha256:{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}
+  command: kubeadm join {{ hostvars[groups['master'][0]]['private_ip'] }}:6443 --token {{ kubeadm_token }} --discovery-token-ca-cert-hash sha256:{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}
   when:
     - "lookup('env', 'K8S_MASTER_HOST') is not defined"
     - "keepalived_vip is not defined"
   register: kubeadm_join
 
 - name: kubeadm join with pre generated token to Kubernetes master using K8S_MASTER_HOST
-  command: kubeadm join --token {{ kubeadm_token }} {{ lookup('env', 'K8S_MASTER_HOST') }}:6443 --discovery-token-ca-cert-hash sha256:{{ lookup('env', 'K8S_CA_CERT_HASH') }}
+  command: kubeadm join {{ lookup('env', 'K8S_MASTER_HOST') }}:6443 --token {{ kubeadm_token }} --discovery-token-ca-cert-hash sha256:{{ lookup('env', 'K8S_CA_CERT_HASH') }}
   when: "lookup('env', 'K8S_MASTER_HOST') is defined"
   register: kubeadm_join
 
