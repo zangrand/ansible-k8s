@@ -15,12 +15,29 @@
     force: yes
     autoremove: yes
 
+
+- name: fix the problem about cgroups
+  become: yes
+  shell: |
+    sysctl fs.inotify.max_user_watches=524288
+
+- name: Setup daemon
+  copy:
+    src: files/daemon.json
+    dest: /etc/docker/daemon.json
+
+- name: Creates directory
+  file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+
 - name: add remote user to group docker
   command: usermod -aG docker {{ansible_user}}
 
 - name: Start docker service
   systemd:
     name: docker
+    daemon_reload: yes
     state: restarted
     enabled: yes
 
