@@ -1,10 +1,10 @@
 ---
 
-- name: Copy the OS key cert to /etc/kubernetes/pki/
+- name: Copy the OS private key to /etc/kubernetes/pki/
   when: init_cluster and started_kubelet
   become: yes
   copy:
-    src: "{{ OS_KEY_CERT }}"
+    src: "{{ OS_KEY_PRIVATE }}"
     dest: /etc/kubernetes/pki/key_cert.pem
 
 

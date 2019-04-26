@@ -4,31 +4,26 @@
   tasks:
   - name: Launch a VM
     os_server:
-      name: "{{ item.name }}"
-      image: "{{ item.image }}"
-      key_name: "{{ item.key_name }}"
-      availability_zone: nova
-      flavor: "{{ item.flavor}}"
-      network: "{{ item.network}}"
       state: present
-      security_groups: "{{ item.security_group }}"
-      meta: "group={{ item.group }}"
+      name: "{{ lookup('env', 'OS_VM_NAME') }}"
+      image: "{{ lookup('env', 'OS_IMAGE') }}"
+      key_name: "{{ lookup('env', 'OS_KEY_NAME') }}"
+      flavor: "{{ lookup('env', 'OS_FLAVOR') }}"
+      network: "{{ lookup('env', 'OS_NETWORK') }}"
+      security_groups: "{{ lookup('env', 'OS_SECURITY_GROUP') }}"
+      availability_zone: nova
       auto_ip: no
       reuse_ips: no
     register: server
-    with_items:
-        - name: "{{ lookup('env', 'OS_VM_NAME') }}"
-          image: "{{ lookup('env', 'OS_IMAGE') }}"
-          flavor: "{{ lookup('env', 'OS_FLAVOR') }}"
-          security_group: "{{ lookup('env', 'OS_SECURITY_GROUP') }}"
-          key_name: "{{ lookup('env', 'OS_KEY_NAME') }}"
-          network: "{{ lookup('env', 'OS_NETWORK') }}"
-          group: 'node'
+
+
+  - set_fact:
+      K8S_MASTER_HOST: "{{ server.openstack.private_v4 }}"
+
 
   - name: Wait for SSH on the Instance
     command: >
-      ssh -i {{ lookup('env', 'OS_KEY_CERT') }} -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@{{item.server.private_v4}} true
-    with_items: "{{ server.results }}"
+      ssh -i {{ lookup('env', 'OS_KEY_CERT') }} -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@"{{ K8S_MASTER_HOST }}" true
     register: result
     until: result is success
     retries: 30
@@ -36,10 +31,10 @@
 
   - name: Add VM to inventory
     add_host:
-      name: "{{ item.server.name }}"
-      groups: "{{ item.server.metadata.group }}"
-      ansible_host: "{{ item.server.private_v4 }}"
-    with_items: "{{ server.results }}"
+      name: "{{ server.openstack.name }}"
+      groups: node
+      ansible_host: "{{ K8S_MASTER_HOST }}"
+      private_ip: "{{ K8S_MASTER_HOST }}"
 
 
 - import_playbook: deploy_k8s.yaml
