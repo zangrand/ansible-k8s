@@ -1,21 +1,49 @@
 ---
 
-- name: Copy the webhook to /etc/kubernetes/pki/
+- name: Copy webhookconfig.yaml
+  when: init_cluster and started_kubelet
+  copy:
+    src: files/webhookconfig.yaml
+    dest: /etc/kubernetes/pki/webhookconfig.yaml
+
+
+- name: Copy k8s-keystone-auth.yaml
+  when: init_cluster and started_kubelet
+  copy:
+    src: files/k8s-keystone-auth.yaml
+    dest: k8s-keystone-auth.yaml
+
+
+- name: Copy the OS private key to /etc/kubernetes/pki/
   when: init_cluster and started_kubelet
   become: yes
-  get_url:
-    url: https://raw.githubusercontent.com/zangrand/ansible-k8s/master/roles/auth/keystone/files/webhookconfig.yaml
-    dest: /etc/kubernetes/pki/
+  copy:
+    src: "{{ OS_KEY_PRIVATE }}"
+    dest: /etc/kubernetes/pki/key_cert.pem
 
 
-- name: Create service account for k8s-keystone-auth
+- name: Copy the OS CA cert to /etc/kubernetes/pki/
+  when: init_cluster and started_kubelet
+  become: yes
+  copy:
+    src: "{{ OS_CACERT }}"
+    dest: /etc/kubernetes/pki/ca_cert.pem
+
+
+- name: Ensure k8s-auth-policy.yaml is set
+  template:
+    src=templates/k8s-auth-policy.yaml.j2
+    dest=k8s-auth-policy.yaml.yaml
+
+
+- name: Create the service account for k8s-keystone-auth
   when: init_cluster and started_kubelet
   command: |
     kubectl --kubeconfig={{ kubeadmin_config }} \
         create clusterrolebinding default-cluster-admin \
             --clusterrole=cluster-admin \
             --serviceaccount=kube-system:default
-  register: create_result
+  register: result
 
 
 - name: Create the keystone-auth-certs secret
@@ -29,44 +57,21 @@
         --from-file=key-file=/etc/kubernetes/pki/apiserver.key \
         --from-file=ca_cert.pem=/etc/kubernetes/pki/ca_cert.pem \
         -n kube-system
-  register: create_result
-
-
-- name: Get the k8s-auth-policy.yaml file
-  when: init_cluster and started_kubelet
-  become: no
-  get_url:
-    url: https://raw.githubusercontent.com/zangrand/ansible-k8s/master/roles/auth/keystone/files/k8s-auth-policy.yaml
-    dest: .
-
-
-- name: Change the OS_PROJECT var in k8s-auth-policy.yaml
-  when: init_cluster and started_kubelet
-  become: no
-  replace:
-    path: ./k8s-auth-policy.yaml
-    regexp: "{{ item.name }}"
-    replace: "{{ item.value }}"
-  with_items:
-    - {name: "OS_PROJECT", value: "{{ OS_PROJECT_NAME }}"}
-    - {name: "OS_USERNAME", value: "{{ OS_USERNAME }}"}
-
+  register: result
 
 
 - name: Deploy the policies 'k8s-auth-policy'
   when: init_cluster and started_kubelet
   command: |
-    kubectl --kubeconfig={{ kubeadmin_config }} \
-        apply -f ./k8s-auth-policy.yaml
-  register: create_result
+    kubectl --kubeconfig={{ kubeadmin_config }} apply -f ./k8s-auth-policy.yaml
+  register: result
 
 
 - name: Deploy the k8s-keystone-auth webhook service
   when: init_cluster and started_kubelet
   command: |
-    kubectl --kubeconfig={{ kubeadmin_config }} \
-        apply -f https://raw.githubusercontent.com/zangrand/ansible-k8s/master/roles/auth/keystone/files/k8s-keystone-auth.yaml
-  register: create_result
+    kubectl --kubeconfig={{ kubeadmin_config }} apply -f ./k8s-keystone-auth.yaml
+  register: result
 
 
 - name: Update /etc/kubernetes/manifests/kube-apiserver.yaml with webhook config
@@ -75,7 +80,7 @@
     path: /etc/kubernetes/manifests/kube-apiserver.yaml
     regexp: "Node,RBAC"
     replace: "Node,Webhook,RBAC"
-  register: create_result
+  register: result
 
 
 - name: Set the webhook options in /etc/kubernetes/manifests/kube-apiserver.yaml
@@ -89,3 +94,11 @@
     - '    - --authorization-webhook-config-file=/etc/kubernetes/pki/webhookconfig.yaml'
     - '    - --authorization-webhook-cache-unauthorized-ttl=5m'
     - '    - --authorization-webhook-cache-authorized-ttl=5m'
+  register: result
+  until: result
+
+
+- name: Wait for the api server port 6443 to become open on the master, don't start checking for 10 seconds
+  wait_for:
+    port: 6443
+    delay: 10
