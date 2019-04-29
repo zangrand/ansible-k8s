@@ -1,0 +1,53 @@
+# Set the OS authentication
+OS_AUTH_URL: https://egi-cloud.pd.infn.it:443/v3
+OS_IDENTITY_API_VERSION: 3
+OS_REGION_NAME: RegionOne
+OS_INTERFACE: public
+OS_CACERT: ../egi-cloud.pem
+OS_SECURITY_GROUP: K8S-SG
+
+# The OS authentication type (password | token)
+OS_AUTH_TYPE: token
+
+# The OS user credential using OS_AUTH_TYPE: password
+OS_USERNAME:
+OS_PASSWORD:
+
+# The OS user credential using OS_AUTH_TYPE: token
+# VOMS_PROXY and EGI_CHECKIN are mutually exclusive.
+VOMS_PROXY: /tmp/x509up_u1000
+
+#EGI_CHECKIN_URL: https://aai.egi.eu
+#EGI_CHECKIN_CLIENT_ID: 
+#EGI_CHECKIN_CLIENT_SECRET:
+#EGI_CHECKIN_REFRESH_TOKEN:
+
+# Set the user key pair
+# Create a new key pair with the user public key if specified
+# To generate the keys use: ssh-keygen -t rsa -f cloud.key (without password)
+OS_KEY_NAME: my_key
+OS_KEY_PUBLIC: cloud.key.pub
+OS_KEY_PRIVATE: cloud.key
+
+# Set the project
+OS_PROJECT_NAME: VO:enmr.eu
+OS_PROJECT_ID: ecd4227c23fd4c85b833a1c7e58cfbba
+OS_PROJECT_DOMAIN_NAME: default
+OS_USER_DOMAIN_NAME: default
+OS_NETWORK: int-enmr.eu
+
+# Set the public IP address
+OS_FIP: 90.147.77.226
+
+# Set the name, image and flavor of the K8S master
+OS_MASTER_NAME: master
+OS_MASTER_IMAGE: f9da2ff6-292a-4f43-9041-6f6d3cfec6fc
+OS_MASTER_FLAVOR: m1.large
+
+# Set the name, image and flavor of the K8S nodes
+OS_NODE_NAME: node
+OS_NODE_IMAGE: f9da2ff6-292a-4f43-9041-6f6d3cfec6fc
+OS_NODE_FLAVOR: m1.large
+
+# Set the number of K8S nodes to create
+OS_NODES: 1
