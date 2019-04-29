@@ -33,7 +33,7 @@
 - name: Ensure k8s-auth-policy.yaml is set
   template:
     src=templates/k8s-auth-policy.yaml.j2
-    dest=k8s-auth-policy.yaml.yaml
+    dest=k8s-auth-policy.yaml
 
 
 - name: Create the service account for k8s-keystone-auth
