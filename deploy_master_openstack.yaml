@@ -12,7 +12,6 @@
     OS_PROJECT_NAME: "{{ OS_PROJECT_NAME }}"
     OS_PROJECT_ID: "{{ OS_PROJECT_ID }}"
     OS_USERNAME: "{{ OS_USERNAME|default('NA') }}"
-    #OS_PASSWORD: "{{ OS_PASSWORD|default('NA') }}"
     OS_REGION_NAME: "{{ OS_REGION_NAME }}"
     OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
     OS_CACERT: "{{ OS_CACERT }}"
@@ -34,6 +33,7 @@
     register: token
 
   - set_fact:
+      OS_AUTH_TYPE: 'token'
       OS_TOKEN: "{{ (token.stdout|from_json).status.token }}"
       OS_USERNAME: "{{ (token.stdout|from_json).user }}"
 
