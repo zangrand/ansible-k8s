@@ -4,13 +4,15 @@
   vars_files:
     - openstack_config.yaml
 
+
   environment:
     OS_AUTH_URL: "{{ OS_AUTH_URL }}"
-    OS_AUTH_TYPE: "{{ OS_AUTH_TYPE | default('password') }}"
+    #OS_AUTH_TYPE: "{{ OS_AUTH_TYPE | default('password') }}"
+    OS_AUTH_TYPE: 'token'
     OS_PROJECT_NAME: "{{ OS_PROJECT_NAME }}"
     OS_PROJECT_ID: "{{ OS_PROJECT_ID }}"
     OS_USERNAME: "{{ OS_USERNAME|default('NA') }}"
-    OS_PASSWORD: "{{ OS_PASSWORD|default('NA') }}"
+    #OS_PASSWORD: "{{ OS_PASSWORD|default('NA') }}"
     OS_REGION_NAME: "{{ OS_REGION_NAME }}"
     OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
     OS_CACERT: "{{ OS_CACERT }}"
@@ -20,13 +22,14 @@
     environment:
       OS_AUTH_URL: "{{ OS_AUTH_URL }}"
       OS_AUTH_TYPE: "{{ OS_AUTH_TYPE }}"
-      OS_USERNAME: "{{ OS_USERNAME }}"
-      OS_PASSWORD: "{{ OS_PASSWORD }}"
-      VOMS_PROXY: "{{ VOMS_PROXY }}"
-      EGI_CHECKIN_URL: "{{ EGI_CHECKIN_URL }}"
-      EGI_CHECKIN_CLIENT_ID: "{{ EGI_CHECKIN_CLIENT_ID }}"
-      EGI_CHECKIN_CLIENT_SECRET: "{{ EGI_CHECKIN_CLIENT_SECRET }}"
-      EGI_CHECKIN_REFRESH_TOKEN: "{{ EGI_CHECKIN_REFRESH_TOKEN }}"
+      OS_CACERT: "{{ OS_CACERT }}"
+      OS_USERNAME: "{{ OS_USERNAME | default() }}"
+      OS_PASSWORD: "{{ OS_PASSWORD | default() }}"
+      VOMS_PROXY: "{{ VOMS_PROXY | default() }}"
+      EGI_CHECKIN_URL: "{{ EGI_CHECKIN_URL | default() }}"
+      EGI_CHECKIN_CLIENT_ID: "{{ EGI_CHECKIN_CLIENT_ID | default() }}"
+      EGI_CHECKIN_CLIENT_SECRET: "{{ EGI_CHECKIN_CLIENT_SECRET | default()}}"
+      EGI_CHECKIN_REFRESH_TOKEN: "{{ EGI_CHECKIN_REFRESH_TOKEN | default() }}"
     command: python roles/auth/keystone/files/keystone_client.py
     register: token
 
@@ -39,6 +42,7 @@
 
   - name: Create the K8S security group
     environment:
+      OS_AUTH_TYPE: 'token'
       OS_TOKEN: "{{ OS_TOKEN }}"
 
     block:
@@ -63,6 +67,7 @@
 
   - name: Create the key pair with the specified public key
     environment:
+      OS_AUTH_TYPE: 'token'
       OS_TOKEN: "{{ OS_TOKEN }}"
     os_keypair:
       state: present
@@ -71,8 +76,10 @@
     when: "OS_KEY_PUBLIC is defined"
 
 
-  - name: Create the VM instance
+  - name: Create the VM instance (public network)
+    when: "OS_FIP is defined"
     environment:
+      OS_AUTH_TYPE: 'token'
       OS_TOKEN: "{{ OS_TOKEN }}"
     os_server:
       state: present
@@ -85,14 +92,33 @@
       security_groups: "{{ OS_SECURITY_GROUP }}"
       availability_zone: nova
       reuse_ips: no
+      auto_ip: yes
+    register: server
+
+
+  - name: Create the VM instance (private network)
+    when: "OS_FIP is undefined"
+    environment:
+      OS_AUTH_TYPE: 'token'
+      OS_TOKEN: "{{ OS_TOKEN }}"
+    os_server:
+      state: present
+      name: "{{ OS_MASTER_NAME }}"
+      image: "{{ OS_MASTER_IMAGE }}"
+      key_name: "{{ OS_KEY_NAME }}"
+      flavor: "{{ OS_MASTER_FLAVOR }}"
+      network: "{{ OS_NETWORK }}"
+      security_groups: "{{ OS_SECURITY_GROUP }}"
+      availability_zone: nova
+      reuse_ips: no
+      auto_ip: no
     register: server
 
   - set_fact:
       K8S_MASTER_HOST: "{{ server.openstack.private_v4 }}"
 
 
-  - name: Wait for SSH on the instance (public network)
-    when: "OS_FIP is defined"
+  - name: Wait for SSH on the instance
     command: >
       ssh -i "{{ OS_KEY_PRIVATE }}" -o BatchMode=yes -o StrictHostKeyChecking=no ubuntu@"{{ OS_FIP | default(K8S_MASTER_HOST) }}" true
     register: result
