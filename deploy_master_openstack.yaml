@@ -27,7 +27,7 @@
       EGI_CHECKIN_CLIENT_ID: "{{ EGI_CHECKIN_CLIENT_ID }}"
       EGI_CHECKIN_CLIENT_SECRET: "{{ EGI_CHECKIN_CLIENT_SECRET }}"
       EGI_CHECKIN_REFRESH_TOKEN: "{{ EGI_CHECKIN_REFRESH_TOKEN }}"
-    command: python ./keystone_client.py
+    command: python roles/auth/keystone/files/keystone_client.py
     register: token
 
   - set_fact:
