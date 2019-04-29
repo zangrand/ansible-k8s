@@ -227,7 +227,7 @@ def get_keystone_url(os_auth_url, path):
     return urlunparse((url[0], url[1], path, url[3], url[4], url[5]))
 
 
-def get_unscoped_token(os_auth_url, access_token=None, voms_proxy=None):
+def get_unscoped_token(os_auth_url, access_token=None, voms_proxy=None, os_ca_cert=None):
     if access_token:
         url = get_keystone_url(
             os_auth_url,
@@ -252,8 +252,8 @@ def get_unscoped_token(os_auth_url, access_token=None, voms_proxy=None):
         r = requests.post(url,
                           headers={'content-type': 'application/json'},
                           data=json.dumps(data),
-                          cert=voms_proxy)
-                          #verify=os_ca_cert)
+                          cert=voms_proxy,
+                          verify=os_ca_cert)
     else:
         raise Exception("access_token or voms_proxy not defined!")
 
@@ -280,8 +280,8 @@ def get_unscoped_token3(os_auth_url, voms_proxy, os_ca_cert=None):
     r = requests.post(url,
                       headers={'content-type': 'application/json'},
                       data=json.dumps(data),
-                      cert=voms_proxy)
-                      #verify=os_ca_cert)
+                      cert=voms_proxy,
+                      verify=os_ca_cert)
 
     if r.status_code != requests.codes.ok:
         r.raise_for_status()
@@ -374,8 +374,8 @@ def get_scoped_token(os_auth_url,
     response = requests.post(url=url,
                              headers={'content-type': 'application/json'},
                              data=json.dumps(data),
-                             timeout=timeout)
-                             #verify=os_ca_cert)
+                             timeout=timeout,
+                             verify=os_ca_cert)
 
     if response.status_code != requests.codes.ok:
         response.raise_for_status()
@@ -595,9 +595,9 @@ def main():
                     if not os_access_token:
                         raise Exception("cannot get the EGI access_token!")
 
-                unscoped_token = get_unscoped_token(os_auth_url, access_token=os_access_token)
+                unscoped_token = get_unscoped_token(os_auth_url, access_token=os_access_token, os_ca_cert=os_ca_cert)
             elif voms_proxy:
-                unscoped_token = get_unscoped_token(os_auth_url, voms_proxy=voms_proxy)
+                unscoped_token = get_unscoped_token(os_auth_url, voms_proxy=voms_proxy, os_ca_cert=os_ca_cert)
             else:
                 raise Exception("found wrong token parameters")
 
