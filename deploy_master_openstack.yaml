@@ -82,7 +82,8 @@
       OS_AUTH_TYPE: 'token'
       OS_TOKEN: "{{ OS_TOKEN }}"
     block:
-    - os_server:
+    - name: Create the VM instance (public network)
+      os_server:
         state: present
         name: "{{ OS_MASTER_NAME }}"
         image: "{{ OS_MASTER_IMAGE }}"
@@ -106,7 +107,8 @@
       OS_AUTH_TYPE: 'token'
       OS_TOKEN: "{{ OS_TOKEN }}"
     block:
-    - os_server:
+    - name: Create the VM instance (private network)
+      os_server:
         state: present
         name: "{{ OS_MASTER_NAME }}"
         image: "{{ OS_MASTER_IMAGE }}"
