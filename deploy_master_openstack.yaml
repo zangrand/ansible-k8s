@@ -92,7 +92,6 @@
       security_groups: "{{ OS_SECURITY_GROUP }}"
       availability_zone: nova
       reuse_ips: no
-      auto_ip: yes
     register: server
 
 
