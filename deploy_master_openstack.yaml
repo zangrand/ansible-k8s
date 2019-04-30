@@ -96,7 +96,7 @@
 
     - set_fact:
         K8S_MASTER_HOST: "{{ server.openstack.private_v4 }}"
-      when: "server.openstack.private_v4 is defined"
+      when: "server.openstack is defined"
 
 
   - name: Create the VM instance (private network)
@@ -121,7 +121,7 @@
 
     - set_fact:
         K8S_MASTER_HOST: "{{ server.openstack.private_v4 }}"
-      when: "server.openstack.private_v4 is defined"
+      when: "server.openstack is defined"
 
 
   - name: Wait for SSH on the instance
@@ -170,7 +170,7 @@
 
   tasks:
   - include_role:
-      name: os-node
+      name: auth/keystone
 
   - include_role:
-      name: auth/keystone
+      name: os-node
