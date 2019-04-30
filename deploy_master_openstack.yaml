@@ -95,6 +95,7 @@
       register: server
 
     - set_fact:
+        K8S_MASTER_NAME: "{{ server.openstack.name }}"
         K8S_MASTER_HOST: "{{ server.openstack.private_v4 }}"
       when: "server.openstack is defined"
 
@@ -120,6 +121,7 @@
       register: server
 
     - set_fact:
+        K8S_MASTER_NAME: "{{ server.openstack.name }}"
         K8S_MASTER_HOST: "{{ server.openstack.private_v4 }}"
       when: "server.openstack is defined"
 
@@ -135,7 +137,7 @@
 
   - name: Add VM to inventory
     add_host:
-      name: "{{ server.openstack.name }}"
+      name: "{{ K8S_MASTER_NAME }}"
       groups: master
       ansible_host: "{{ OS_FIP | default(K8S_MASTER_HOST) }}"
       private_ip: "{{ K8S_MASTER_HOST }}"
