@@ -37,8 +37,6 @@
       OS_TOKEN: "{{ (token.stdout|from_json).status.token }}"
       OS_USERNAME: "{{ (token.stdout|from_json).user }}"
 
-  - name: Dump all vars
-    action: template src=templates/dump_vars.j2 dest=dump_vars.yaml
 
   - name: Create the K8S security group
     environment:
@@ -145,6 +143,10 @@
       main_cluster_node: true
 
 
+  - name: Dump all vars
+    action: template src=templates/dump_vars.j2 dest=dump_vars.yaml
+
+
   - name: Display vars
     debug:
       msg:
@@ -168,7 +170,7 @@
 
   tasks:
   - include_role:
-      name: auth/keystone
+      name: os-node
 
   - include_role:
-      name: os-node
+      name: auth/keystone

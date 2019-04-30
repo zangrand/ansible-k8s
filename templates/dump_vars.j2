@@ -62,6 +62,10 @@ OS_KEY_PUBLIC: "{{ OS_KEY_PUBLIC }}"
 OS_KEY_PRIVATE: "{{ OS_KEY_PRIVATE }}"
 {% endif %}
 
+{% if K8S_MASTER_HOST is defined %}
+K8S_MASTER_HOST: "{{ K8S_MASTER_HOST }}"
+{% endif %}
+
 {% if OS_MASTER_NAME is defined %}
 OS_MASTER_NAME: "{{ OS_MASTER_NAME }}"
 {% endif %}

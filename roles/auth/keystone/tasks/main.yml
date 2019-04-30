@@ -74,28 +74,20 @@
   register: result
 
 
-- name: Update /etc/kubernetes/manifests/kube-apiserver.yaml with webhook config
+- name: Describe the service k8s-keystone-auth-service
   when: init_cluster and started_kubelet
-  replace:
-    path: /etc/kubernetes/manifests/kube-apiserver.yaml
-    regexp: "Node,RBAC"
-    replace: "Node,Webhook,RBAC"
+  command: |
+    kubectl --kubeconfig={{ kubeadmin_config }} -n kube-system describe services k8s-keystone-auth-service
   register: result
+  until: result.stdout.find(":8443") != -1
+  retries: 10
+  delay: 10
 
 
 - name: Set the webhook options in /etc/kubernetes/manifests/kube-apiserver.yaml
-  lineinfile:
-    path: /etc/kubernetes/manifests/kube-apiserver.yaml
-    insertbefore: "image:"
-    line: "{{ item }}"
-  with_items:
-    - '    - --authentication-token-webhook-config-file=/etc/kubernetes/pki/webhookconfig.yaml'
-    - '    - --authentication-token-webhook-cache-ttl=5m'
-    - '    - --authorization-webhook-config-file=/etc/kubernetes/pki/webhookconfig.yaml'
-    - '    - --authorization-webhook-cache-unauthorized-ttl=5m'
-    - '    - --authorization-webhook-cache-authorized-ttl=5m'
-  register: result
-  until: result
+  template:
+    src=templates/kube-apiserver.yaml.j2
+    dest=/etc/kubernetes/manifests/kube-apiserver.yaml
 
 
 - name: Wait for the api server port 6443 to become open on the master, don't start checking for 10 seconds
