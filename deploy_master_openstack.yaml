@@ -117,7 +117,7 @@
         availability_zone: nova
         reuse_ips: no
         auto_ip: no
-      register: private_server
+      register: server
 
     - set_fact:
         K8S_MASTER_HOST: "{{ server.openstack.private_v4 }}"
