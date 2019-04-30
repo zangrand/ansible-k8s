@@ -7,7 +7,7 @@
   become_method: sudo
 
 - name: install basic packages
-  package: 
-    name: ['tree', 'python-yaml', 'git', 'apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common']
+  package:
+    name: ['python-yaml', 'git', 'apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common']
   become: yes
   become_method: sudo
