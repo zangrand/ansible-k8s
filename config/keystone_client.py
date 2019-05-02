@@ -8,9 +8,18 @@ import json
 from argparse import ArgumentParser
 from datetime import datetime
 
+# URL Parse
+try:
+    # Python 2.x
+    from urlparse import urlparse, urlunparse, urljoin
+except ImportError:
+    # Python 3.x
+    from urllib.parse import urlparse, urlunparse, urljoin
+
+
 __author__ = "Lisa Zangrando"
 __email__ = "lisa.zangrando[AT]pd.infn.it"
-__copyright__ = """Copyright (c) 2015 INFN - INDIGO-DataCloud
+__copyright__ = """Copyright (c) 2019 INFN
 All Rights Reserved
 
 Licensed under the Apache License, Version 2.0;
@@ -191,382 +200,200 @@ class Token(object):
         return Trust(response.json())
 
 
-class KeystoneClient(object):
+def get_access_token(checkin_url, client_id, client_secret, refresh_token):
+    refresh_data = {
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'grant_type': 'refresh_token',
+        'refresh_token': refresh_token,
+        'scope': 'openid email profile',
+    }
 
-    def __init__(self, auth_url, username, password,
-                 user_domain_id=None,
-                 user_domain_name="default", project_id=None,
-                 project_name=None, project_domain_id=None,
-                 project_domain_name="default", timeout=None,
-                 default_trust_expiration=None,
-                 ca_cert=None):
-        self.auth_url = auth_url
-        self.username = username
-        self.password = password
-        self.user_domain_id = user_domain_id
-        self.user_domain_name = user_domain_name
-        self.project_id = project_id
-        self.project_name = project_name
-        self.project_domain_id = project_domain_id
-        self.project_domain_name = project_domain_name
-        self.ca_cert = ca_cert
-        self.timeout = timeout
-        self.token = None
+    r = requests.post(urljoin(checkin_url, "oidc/token"),
+                      auth=(client_id, client_secret), data=refresh_data)
+    if r.status_code != requests.codes.ok:
+        r.raise_for_status()
+    return r.json()['access_token']
 
-        if default_trust_expiration:
-            self.default_trust_expiration = default_trust_expiration
-        else:
-            self.default_trust_expiration = 24
 
-    def authenticate(self):
-        if self.token is not None:
-            if self.token.isExpired():
-                try:
-                    self.deleteToken(self.token.getId())
-                except requests.exceptions.HTTPError:
-                    pass
-            else:
-                return
+def get_keystone_url(os_auth_url, path):
+    url = urlparse(os_auth_url)
+    prefix = url.path.rstrip('/')
 
-        headers = {"Content-Type": "application/json",
-                   "Accept": "application/json",
-                   "User-Agent": "python-novaclient"}
+    if prefix.endswith('v2.0') or prefix.endswith('v3'):
+        prefix = os.path.dirname(prefix)
 
+    path = os.path.join(prefix, path)
+    return urlunparse((url[0], url[1], path, url[3], url[4], url[5]))
+
+
+def get_unscoped_token(os_auth_url, access_token=None, voms_proxy=None, os_ca_cert=None):
+    if access_token:
+        url = get_keystone_url(
+            os_auth_url,
+            "/v3/OS-FEDERATION/identity_providers/egi.eu/protocols/openid/auth")
+
+        r = requests.post(url,
+                          headers={'Authorization': 'Bearer %s' % access_token})
+    elif voms_proxy:
+        url = get_keystone_url(os_auth_url, "/v3/auth/tokens")
+        data = {}
+        data["auth"] = {
+            'identity': {
+                'methods': ['mapped'],
+                'mapped': {
+                    'voms': True,
+                    'identity_provider': 'egi.eu',
+                    'protocol': 'mapped'
+                }
+            }
+        }
+
+        r = requests.post(url,
+                          headers={'content-type': 'application/json'},
+                          data=json.dumps(data),
+                          cert=voms_proxy,
+                          verify=os_ca_cert)
+    else:
+        raise Exception("access_token or voms_proxy not defined!")
+
+    if r.status_code != requests.codes.ok:
+        r.raise_for_status()
+
+    return r.headers['X-Subject-Token']
+
+
+def get_unscoped_token3(os_auth_url, voms_proxy, os_ca_cert=None):
+    url = get_keystone_url(os_auth_url, "/v3/auth/tokens")
+    data = {}
+    data["auth"] = {
+        'identity': {
+            'methods': ['mapped'],
+            'mapped': {
+                'voms': True,
+                'identity_provider': 'egi.eu',
+                'protocol': 'mapped'
+            }
+        }
+    }
+
+    r = requests.post(url,
+                      headers={'content-type': 'application/json'},
+                      data=json.dumps(data),
+                      cert=voms_proxy,
+                      verify=os_ca_cert)
+
+    if r.status_code != requests.codes.ok:
+        r.raise_for_status()
+
+    return r.headers['X-Subject-Token']
+
+
+def get_scoped_token2(os_auth_url, unscoped_token, os_project_id=None, os_project_name=None):
+    url = get_keystone_url(os_auth_url, "/v3/auth/tokens")
+    token_body = {}
+    token_body["auth"] = {
+        "identity": {
+            "methods": ["token"],
+            "token": {"id": unscoped_token}
+        }
+    }
+
+    if os_project_id:
+        token_body["scope"] = {"project": {"id": os_project_id}}
+    elif os_project_name:
+        token_body["scope"] = {"project": {"name": os_project_name}}
+
+    r = requests.post(url, headers={'content-type': 'application/json'},
+                      data=json.dumps(token_body))
+    if r.status_code != requests.codes.ok:
+        r.raise_for_status()
+
+    return r.headers['X-Subject-Token']
+
+
+def get_scoped_token(os_auth_url,
+                     os_auth_type="password",
+                     os_access_token=None,
+                     os_username=None,
+                     os_password=None,
+                     os_user_domain_id=None,
+                     os_user_domain_name="default",
+                     os_project_id=None,
+                     os_project_name=None,
+                     os_project_domain_id=None,
+                     os_project_domain_name="default",
+                     os_ca_cert=None,
+                     timeout=None,
+                     unscoped_token=None):
+    url = get_keystone_url(os_auth_url, "/v3/auth/tokens")
+
+    project_domain = {}
+    if os_project_domain_id is not None:
+        project_domain["id"] = os_project_domain_id
+    else:
+        project_domain["name"] = os_project_domain_name
+
+    if os_auth_type == "password":
         user_domain = {}
-        if self.user_domain_id is not None:
-            user_domain["id"] = self.user_domain_id
+        if os_user_domain_id is not None:
+            user_domain["id"] = os_user_domain_id
         else:
-            user_domain["name"] = self.user_domain_name
-
-        project_domain = {}
-        if self.project_domain_id is not None:
-            project_domain["id"] = self.project_domain_id
-        else:
-            project_domain["name"] = self.project_domain_name
+            user_domain["name"] = os_user_domain_name
 
         identity = {"methods": ["password"],
-                    "password": {"user": {"name": self.username,
+                    "password": {"user": {"name": os_username,
                                           "domain": user_domain,
-                                          "password": self.password}}}
+                                          "password": os_password}}}
 
         data = {"auth": {}}
         data["auth"]["identity"] = identity
 
-        if self.project_name:
-            data["auth"]["scope"] = {"project": {"name": self.project_name,
+        if os_project_name:
+            data["auth"]["scope"] = {"project": {"name": os_project_name,
+                                                 "domain": project_domain}}
+        elif os_project_id:
+            data["auth"]["scope"] = {"project": {"id": os_project_id,
+                                                 "domain": project_domain}}
+    elif os_auth_type == "token":
+        data = {}
+        data["auth"] = {
+            "identity": {
+                "methods": ["token"],
+                "token": {"id": unscoped_token}
+            }
+        }
+
+        if os_project_id:
+            data["auth"]["scope"] = {"project": {"id": os_project_id,
+                                                "domain": project_domain}}
+        elif os_project_name:
+            data["auth"]["scope"] = {"project": {"name": os_project_name,
                                                  "domain": project_domain}}
 
-        if self.project_id:
-            data["auth"]["scope"] = {"project": {"id": self.project_id,
-                                                 "domain": project_domain}}
-        response = requests.post(url=self.auth_url + "/auth/tokens",
-                                 headers=headers,
-                                 data=json.dumps(data),
-                                 timeout=self.timeout,
-                                 verify=self.ca_cert)
+    response = requests.post(url=url,
+                             headers={'content-type': 'application/json'},
+                             data=json.dumps(data),
+                             timeout=timeout,
+                             verify=os_ca_cert)
 
-        if response.status_code != requests.codes.ok:
-            response.raise_for_status()
+    if response.status_code != requests.codes.ok:
+        response.raise_for_status()
 
-        if not response.text:
-            raise Exception("authentication failed!")
+    if not response.text:
+        raise Exception("authentication failed!")
 
-        # print(response.__dict__)
+    # print(response.__dict__)
 
-        token_subject = response.headers["X-Subject-Token"]
-        token_data = response.json()
+    token_subject = response.headers["X-Subject-Token"]
+    token_data = response.json()
 
-        self.token = Token(token_subject, token_data)
-
-    def getUser(self, id):
-        try:
-            response = self.getResource("users/%s" % id, "GET")
-        except requests.exceptions.HTTPError as ex:
-            response = ex.response.json()
-            raise Exception("error on retrieving the user info (id=%r): %s"
-                            % (id, response["error"]["message"]))
-
-        if response:
-            response = response["user"]
-
-        return response
-
-    def getUsers(self):
-        try:
-            response = self.getResource("users", "GET")
-        except requests.exceptions.HTTPError as ex:
-            response = ex.response.json()
-            raise Exception("error on retrieving the users list: %s"
-                            % response["error"]["message"])
-
-        if response:
-            response = response["users"]
-
-        return response
-
-    def getUserProjects(self, id):
-        try:
-            response = self.getResource("users/%s/projects" % id, "GET")
-        except requests.exceptions.HTTPError as ex:
-            response = ex.response.json()
-            raise Exception("error on retrieving the users's projects "
-                            "(id=%r): %s" % (id, response["error"]["message"]))
-
-        if response:
-            response = response["projects"]
-
-        return response
-
-    def getUserRoles(self, user_id, project_id):
-        try:
-            response = self.getResource("/projects/%s/users/%s/roles"
-                                        % (project_id, user_id), "GET")
-        except requests.exceptions.HTTPError as ex:
-            response = ex.response.json()
-            raise Exception("error on retrieving the user's roles (usrId=%r, "
-                            "prjId=%r): %s" % (user_id,
-                                               project_id,
-                                               response["error"]["message"]))
-
-        if response:
-            response = response["roles"]
-
-        return response
-
-    def getProject(self, id):
-        try:
-            response = self.getResource("/projects/%s" % id, "GET")
-        except requests.exceptions.HTTPError as ex:
-            response = ex.response.json()
-            raise Exception("error on retrieving the project (id=%r, "
-                            % (id, response["error"]["message"]))
-
-        if response:
-            response = response["project"]
-
-        return response
-
-    def getProjects(self):
-        try:
-            response = self.getResource("/projects", "GET")
-        except requests.exceptions.HTTPError as ex:
-            response = ex.response.json()
-            raise Exception("error on retrieving the projects list: %s"
-                            % response["error"]["message"])
-
-        if response:
-            response = response["projects"]
-
-        return response
-
-    def getRole(self, id):
-        try:
-            response = self.getResource("/roles/%s" % id, "GET")
-        except requests.exceptions.HTTPError as ex:
-            response = ex.response.json()
-            raise Exception("error on retrieving the role info (id=%r): %s"
-                            % (id, response["error"]["message"]))
-
-        if response:
-            response = response["role"]
-
-        return response
-
-    def getRoles(self):
-        try:
-            response = self.getResource("/roles", "GET")
-        except requests.exceptions.HTTPError as ex:
-            response = ex.response.json()
-            raise Exception("error on retrieving the roles list: %s"
-                            % response["error"]["message"])
-
-        if response:
-            response = response["roles"]
-
-        return response
-
-    def getToken(self):
-        self.authenticate()
-        return self.token
-
-    def deleteToken(self, id):
-        if self.token is None:
-            return
-
-        headers = {"Content-Type": "application/json",
-                   "Accept": "application/json",
-                   "User-Agent": "python-novaclient",
-                   "X-Auth-Project-Id": self.token.getProject()["name"],
-                   "X-Auth-Token": self.token.getId(),
-                   "X-Subject-Token": id}
-
-        response = requests.delete(url=self.auth_url + "/auth/tokens",
-                                   headers=headers,
-                                   timeout=self.timeout)
-
-        self.token = None
-
-        if response.status_code != requests.codes.ok:
-            response.raise_for_status()
-
-    def validateToken(self, id):
-        self.authenticate()
-
-        headers = {"Content-Type": "application/json",
-                   "Accept": "application/json",
-                   "User-Agent": "python-novaclient",
-                   "X-Auth-Project-Id": self.token.getProject()["name"],
-                   "X-Auth-Token": self.token.getId(),
-                   "X-Subject-Token": id}
-
-        response = requests.get(url=self.auth_url + "/auth/tokens",
-                                headers=headers,
-                                timeout=self.timeout)
-
-        if response.status_code != requests.codes.ok:
-            response.raise_for_status()
-
-        if not response.text:
-            raise Exception("token not found!")
-
-        token_subject = response.headers["X-Subject-Token"]
-        token_data = response.json()
-
-        return Token(token_subject, token_data)
-
-    def getEndpoint(self, id=None, service_id=None):
-        if id:
-            try:
-                response = self.getResource("/endpoints/%s" % id, "GET")
-            except requests.exceptions.HTTPError as ex:
-                response = ex.response.json()
-                raise Exception("error on retrieving the endpoint (id=%r): %s"
-                                % (id, response["error"]["message"]))
-            if response:
-                response = response["endpoint"]
-
-            return response
-        elif service_id:
-            try:
-                endpoints = self.getEndpoints()
-            except requests.exceptions.HTTPError as ex:
-                response = ex.response.json()
-                raise Exception("error on retrieving the endpoints list"
-                                "(serviceId=%r): %s"
-                                % response["error"]["message"])
-
-            if endpoints:
-                for endpoint in endpoints:
-                    if endpoint["service_id"] == service_id:
-                        return endpoint
-
-        return None
-
-    def getEndpoints(self):
-        try:
-            response = self.getResource("/endpoints", "GET")
-        except requests.exceptions.HTTPError as ex:
-            response = ex.response.json()
-            raise Exception("error on retrieving the endpoints list: %s"
-                            % response["error"]["message"])
-
-        if response:
-            response = response["endpoints"]
-
-        return response
-
-    def getService(self, id=None, name=None):
-        if id:
-            try:
-                response = self.getResource("/services/%s" % id, "GET")
-            except requests.exceptions.HTTPError as ex:
-                response = ex.response.json()
-                raise Exception("error on retrieving the service info (id=%r)"
-                                ": %s" % (id, response["error"]["message"]))
-
-            if response:
-                response = response["service"]
-            return response
-        elif name:
-            services = self.getServices()
-
-            if services:
-                for service in services:
-                    if service["name"] == name:
-                        return service
-
-        return None
-
-    def getServices(self):
-        try:
-            response = self.getResource("/services", "GET")
-        except requests.exceptions.HTTPError as ex:
-            response = ex.response.json()
-            raise Exception("error on retrieving the services list: %s"
-                            % response["error"]["message"])
-
-        if response:
-            response = response["services"]
-
-        return response
-
-    def getResource(self, resource, method, data=None):
-        self.authenticate()
-
-        url = self.auth_url + "/" + resource
-
-        headers = {"Content-Type": "application/json",
-                   "Accept": "application/json",
-                   "User-Agent": "python-novaclient",
-                   "X-Auth-Project-Id": self.token.getProject()["name"],
-                   "X-Auth-Token": self.token.getId()}
-
-        if method == "GET":
-            response = requests.get(url,
-                                    headers=headers,
-                                    params=data,
-                                    timeout=self.timeout,
-                                    verify=self.ca_cert)
-        elif method == "POST":
-            response = requests.post(url,
-                                     headers=headers,
-                                     data=json.dumps(data),
-                                     timeout=self.timeout,
-                                     verify=self.ca_cert)
-        elif method == "PUT":
-            response = requests.put(url,
-                                    headers=headers,
-                                    data=json.dumps(data),
-                                    timeout=self.timeout,
-                                    verify=self.ca_cert)
-        elif method == "HEAD":
-            response = requests.head(url,
-                                     headers=headers,
-                                     data=json.dumps(data),
-                                     timeout=self.timeout,
-                                     verify=self.ca_cert)
-        elif method == "DELETE":
-            response = requests.delete(url,
-                                       headers=headers,
-                                       data=json.dumps(data),
-                                       timeout=self.timeout,
-                                       verify=self.ca_cert)
-        else:
-            raise Exception("wrong HTTP method: %s" % method)
-
-        if response.status_code != requests.codes.ok:
-            response.raise_for_status()
-
-        if response.text:
-            return response.json()
-        else:
-            return None
-
+    return Token(token_subject, token_data)
 
 
 def main():
     try:
-        parser = ArgumentParser(prog="synergy",
+        parser = ArgumentParser(prog="keystone_client",
                                 epilog="Command-line interface to the"
                                        " OpenStack Synergy API.")
 
@@ -635,6 +462,16 @@ def main():
                             default=os.environ.get("OS_AUTH_URL"),
                             help="defaults to env[OS_AUTH_URL]")
 
+        parser.add_argument("--os-access-token",
+                            metavar="<token>",
+                            default=os.environ.get("OS_ACCESS_TOKEN"),
+                            help="defaults to env[OS_ACCESS_TOKEN]")
+
+        parser.add_argument("--os-auth-type",
+                            metavar="<auth-type>",
+                            default=os.environ.get("OS_AUTH_TYPE", "password"),
+                            help="defaults to env[OS_AUTH_TYPE]")
+
         parser.add_argument("--os-auth-system",
                             metavar="<auth-system>",
                             default=os.environ.get("OS_AUTH_SYSTEM"),
@@ -652,16 +489,36 @@ def main():
                             help="Specify a CA bundle file to use in verifying"
                                  " a TLS (https) server certificate. Defaults "
                                  "to env[OS_CACERT]")
-        """
-        parser.add_argument("--insecure",
-                            default=os.environ.get("INSECURE", False),
-                            action="store_true",
-                            help="explicitly allow Synergy's client to perform"
-                                 " \"insecure\" SSL (https) requests. The "
-                                 "server's certificate will not be verified "
-                                 "against any certificate authorities. This "
-                                 "option should be used with caution.")
-        """
+
+        parser.add_argument("--egi-checkin-url",
+                            metavar="<egi-checkin-url>",
+                            default=os.environ.get("EGI_CHECKIN_URL", "https://aai.egi.eu"),
+                            help="Specify the EGI checkin URL. Defaults "
+                                 "to env[EGI_CHECKIN_URL]")
+
+        parser.add_argument("--egi-checkin-client-id",
+                            metavar="<egi-checkin-client-id>",
+                            default=os.environ.get("EGI_CHECKIN_CLIENT_ID", None),
+                            help="Specify your EGI checkin client ID. Defaults "
+                                 "to env[EGI_CHECKIN_CLIENT_ID]")
+
+        parser.add_argument("--egi-checkin-client-secret",
+                            metavar="<egi-checkin-client-secret>",
+                            default=os.environ.get("EGI_CHECKIN_CLIENT_SECRET", None),
+                            help="Specify your EGI checkin client secret. Defaults "
+                                 "to env[EGI_CHECKIN_CLIENT_SECRET]")
+
+        parser.add_argument("--egi-checkin-refresh-token",
+                            metavar="<egi-checkin-refresh-token>",
+                            default=os.environ.get("EGI_CHECKIN_REFRESH_TOKEN", None),
+                            help="Specify your EGI refresh token. Defaults "
+                                 "to env[EGI_CHECKIN_REFRESH_TOKEN]")
+
+        parser.add_argument("--voms-proxy",
+                            metavar="<voms-proxy>",
+                            default=os.environ.get("VOMS_PROXY", None),
+                            help="Specify your VOMS proxy file. Defaults "
+                                 "to env[VOMS_PROXY]")
 
         args = parser.parse_args(sys.argv[1:])
 
@@ -669,23 +526,27 @@ def main():
         os_password = args.os_password
         os_user_domain_id = args.os_user_domain_id
         os_user_domain_name = args.os_user_domain_name
+        os_project_id = args.os_project_id
         os_project_name = args.os_project_name
         os_project_domain_id = args.os_project_domain_id
         os_project_domain_name = args.os_project_domain_name
+        os_auth_type = args.os_auth_type
+        os_access_token = args.os_access_token
         os_auth_token = args.os_auth_token
         os_auth_token_cache = args.os_auth_token_cache
         os_auth_url = args.os_auth_url
         os_ca_cert = args.os_ca_cert
         bypass_url = args.bypass_url
+        egi_checkin_url = args.egi_checkin_url
+        egi_client_id = args.egi_checkin_client_id
+        egi_client_secret = args.egi_checkin_client_secret
+        egi_refresh_token = args.egi_checkin_refresh_token
+        voms_proxy = args.voms_proxy
 
-        if not os_username:
-            raise Exception("'os-username' not defined!")
+        token = None
 
-        if not os_password:
-            raise Exception("'os-password' not defined!")
-
-        if not os_project_name:
-            raise Exception("'os-project-name' not defined!")
+        if not os_project_name and not os_project_id:
+            raise Exception("os-project-name and os-project-id not defined!")
 
         if not os_auth_url:
             raise Exception("'os-auth-url' not defined!")
@@ -696,23 +557,59 @@ def main():
         if not os_project_domain_name:
             os_project_domain_name = "default"
 
-        client = KeystoneClient(
-            auth_url=os_auth_url,
-            username=os_username,
-            password=os_password,
-            user_domain_id=os_user_domain_id,
-            user_domain_name=os_user_domain_name,
-            project_name=os_project_name,
-            project_domain_id=os_project_domain_id,
-            project_domain_name=os_project_domain_name,
-            ca_cert=os_ca_cert)
+        if os_auth_type == "password":
+            if not os_username:
+                raise Exception("'os-username' not defined!")
 
+            if not os_password:
+                raise Exception("'os-password' not defined!")
 
-        client.authenticate()
-        token = client.getToken()
+            token = get_scoped_token(os_auth_url=os_auth_url,
+                                     os_auth_type=os_auth_type,
+                                     os_username=os_username,
+                                     os_password=os_password,
+                                     os_user_domain_id=os_user_domain_id,
+                                     os_user_domain_name=os_user_domain_name,
+                                     os_project_name=os_project_name,
+                                     os_project_domain_id=os_project_domain_id,
+                                     os_project_domain_name=os_project_domain_name,
+                                     os_ca_cert=os_ca_cert)
+        else:
+            """
+            if not egi_checkin_url:
+                raise Exception("'egi_checkin_url' not defined!")
+
+            if not egi_client_id:
+                raise Exception("'egi_client_id' not defined!")
+
+            if not egi_client_secret:
+                raise Exception("'egi_client_secret' not defined!")
+            """
+            if egi_client_id and egi_client_secret and egi_refresh_token:
+                if not os_access_token:
+                    os_access_token = get_access_token(egi_checkin_url,
+                                                       egi_client_id,
+                                                       egi_client_secret,
+                                                       egi_refresh_token)
+
+                    if not os_access_token:
+                        raise Exception("cannot get the EGI access_token!")
+
+                unscoped_token = get_unscoped_token(os_auth_url, access_token=os_access_token, os_ca_cert=os_ca_cert)
+            elif voms_proxy:
+                unscoped_token = get_unscoped_token(os_auth_url, voms_proxy=voms_proxy, os_ca_cert=os_ca_cert)
+            else:
+                raise Exception("found wrong token parameters")
+
+            token = get_scoped_token(os_auth_url=os_auth_url,
+                                     os_auth_type=os_auth_type,
+                                     os_project_id=os_project_id,
+                                     unscoped_token=unscoped_token,
+                                     os_ca_cert=os_ca_cert)
 
         result = {"apiVersion": "client.authentication.k8s.io/v1beta1",
                   "kind": "ExecCredential",
+                  "user": token.getUser()["name"],
                   "status": {
                       "token": token.getId()
                   }
