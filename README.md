@@ -139,6 +139,19 @@ keepalived_vip=10.64.41.100
 ...
 ```
 
+Add your SSH key to the ssh-agent
+
+```
+# eval "$(ssh-agent -s)"
+Agent pid 59566
+
+# ssh-add ~/.ssh/id_rsa
+```
+or
+```
+# ssh-add ~/your_cert.pem
+```
+
 If you want 1 master finally execute:
 
 ```
