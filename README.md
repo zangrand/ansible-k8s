@@ -198,6 +198,13 @@ The kubectl command line tool is available on the master node. If you wish to ac
 In case of Kubernetes has been deployed on OpenStack, you can enable your local kubectl to access the cluster through the Keystone authentication. To do it, copy all files contained into the folder ansible-k8s/config/ to $HOME/.kube/. Do not forget to source the openrc.sh with your Openstack credentials (the same used in the openstack_config.yaml file above) and OS_CACERT variable set.
 Edit $HOME/.kube/config and set the IP address of your new K8S master.
 
+To allow other users to access your K8S cluster and operate on a subset of its resources, edit the auth-policy file with:
+```
+kubectl -n kube-system edit configmap k8s-auth-policy
+```
+modify in the first block the line "resources" and replace "type": "role", "values": ["k8s-user"] with e.g. "type": "user", "values": ["username1", "username2"]
+
+
 ### By dashboards
 The cluster exposes the following dashboards:
 - K8S dashboard: https://<master_ip>:30900
