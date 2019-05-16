@@ -184,6 +184,7 @@ $ pip install shade
 Execute:
 
 ```
+# export ANSIBLE_HOST_KEY_CHECKING=False
 # ansible-playbook deploy_master_openstack.yaml
 ```
 Please remark that deployment requires further a few minutes to have the full cluster up and running.
