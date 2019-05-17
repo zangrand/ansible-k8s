@@ -71,16 +71,18 @@
       state: present
       name: "{{ OS_KEY_NAME }}"
       public_key_file: "{{ OS_KEY_PUBLIC }}"
-    when: "OS_KEY_PUBLIC is defined"
+    when: OS_KEY_PUBLIC is defined
 
 
-  - name: Create the VM instance (public network)
-    when: "OS_FIP is defined"
+  - name: Create the VM instance (public network with user defined ip)
+    when:
+      - OS_FIP is defined
+      - OS_FIP != "auto"
     environment:
       OS_AUTH_TYPE: 'token'
       OS_TOKEN: "{{ OS_TOKEN }}"
     block:
-    - name: Create the VM instance (public network)
+    - name: Create the VM instance (public network with user defined ip)
       os_server:
         state: present
         name: "{{ OS_MASTER_NAME }}"
@@ -97,11 +99,38 @@
     - set_fact:
         K8S_MASTER_NAME: "{{ server.openstack.name }}"
         K8S_MASTER_HOST: "{{ server.openstack.private_v4 }}"
-      when: "server.openstack is defined"
+      when: server.openstack is defined
 
+- name: Create the VM instance (public network with auto_ip)
+    when:
+      - OS_FIP is defined
+      - OS_FIP == "auto"
+    environment:
+      OS_AUTH_TYPE: 'token'
+      OS_TOKEN: "{{ OS_TOKEN }}"
+    block:
+    - name: Create the VM instance (public network with auto_ip)
+      os_server:
+        state: present
+        name: "{{ OS_MASTER_NAME }}"
+        image: "{{ OS_MASTER_IMAGE }}"
+        key_name: "{{ OS_KEY_NAME }}"
+        flavor: "{{ OS_MASTER_FLAVOR }}"
+        network: "{{ OS_NETWORK }}"
+        security_groups: "{{ OS_SECURITY_GROUP }}"
+        availability_zone: nova
+        auto_ip: yes
+        reuse_ips: yes
+      register: server
+
+    - set_fact:
+        K8S_MASTER_NAME: "{{ server.openstack.name }}"
+        K8S_MASTER_HOST: "{{ server.openstack.private_v4 }}"
+        OS_FIP: "{{ server.openstack.public_v4 }}"
+      when: server.openstack is defined
 
   - name: Create the VM instance (private network)
-    when: "OS_FIP is undefined"
+    when: OS_FIP is undefined
     environment:
       OS_AUTH_TYPE: 'token'
       OS_TOKEN: "{{ OS_TOKEN }}"
@@ -123,7 +152,7 @@
     - set_fact:
         K8S_MASTER_NAME: "{{ server.openstack.name }}"
         K8S_MASTER_HOST: "{{ server.openstack.private_v4 }}"
-      when: "server.openstack is defined"
+      when: server.openstack is defined
 
 
   - name: Wait for SSH on the instance
