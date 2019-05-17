@@ -101,7 +101,7 @@
         K8S_MASTER_HOST: "{{ server.openstack.private_v4 }}"
       when: server.openstack is defined
 
-- name: Create the VM instance (public network with auto_ip)
+  - name: Create the VM instance (public network with auto_ip)
     when:
       - OS_FIP is defined
       - OS_FIP == "auto"
