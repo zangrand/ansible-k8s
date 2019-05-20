@@ -36,8 +36,8 @@ OS_PROJECT_DOMAIN_NAME: default
 OS_USER_DOMAIN_NAME: default
 OS_NETWORK: int-enmr.eu
 
-# Set the public IP address
-OS_FIP: 90.147.77.226
+# Set the public IP address (automatic or pre-allocated)
+OS_FIP: auto
 
 # Set the name, image and flavor of the K8S master
 OS_MASTER_NAME: master
