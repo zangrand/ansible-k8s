@@ -11,8 +11,8 @@ kubectl exec -it smactcluster-kafka-0 -- bin/kafka-run-class.sh org.apache.kafka
 # get K8s master IP and kafka bootstrap port to be put in "val brokers" line of KafkaClientProperties.scala:
 kubectl get node master -o=jsonpath='{.status.addresses[0].address}{"\n"}'
 kubectl get service smactcluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}{"\n"}'
-#
-# launch the spark application:
+# put val broker = "IP:port" in binaryStream/src/main/scala/ch/cern/KafkaClientProperties.scala and rebuild StreamProcessing-1.0-SNAPSHOT.jar with maven
+# copy the new jar file in the URL shown in the mainApplicationFile line of streamprocessor.yaml and launch the spark application:
 kubectl apply -f streamprocessor.yaml
 #
 # check the status:
