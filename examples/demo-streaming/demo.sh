@@ -9,10 +9,14 @@ BSERV=$(kubectl describe service smactcluster-kafka-external-bootstrap | grep En
 kubectl exec -it smactcluster-kafka-0 -- bin/kafka-run-class.sh org.apache.kafka.tools.ProducerPerformance --topic produce28partitions --num-records 10000000000 --record-size 32 --throughput 100 --producer-props compression.type=snappy acks=1 bootstrap.servers=$BSERV buffer.memory=104857600 batch.size=50000
 #
 # get K8s master IP and kafka bootstrap port to be put in "val brokers" line of KafkaClientProperties.scala:
-kubectl get node master -o=jsonpath='{.status.addresses[0].address}{"\n"}'
-kubectl get service smactcluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}{"\n"}'
-# put val broker = "IP:port" in binaryStream/src/main/scala/ch/cern/KafkaClientProperties.scala and rebuild StreamProcessing-1.0-SNAPSHOT.jar with maven
-# copy the new jar file in the URL shown in the mainApplicationFile line of streamprocessor.yaml and launch the spark application:
+IP=$(kubectl get node master -o=jsonpath='{.status.addresses[0].address}')
+Port=$(kubectl get service smactcluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}')
+# put val broker = "IP:Port" in binaryStream/src/main/scala/ch/cern/KafkaClientProperties.scala
+# rebuild StreamProcessing-1.0-SNAPSHOT.jar with maven by doing:
+# $ cd binaryStream; mvn package
+# copy the new jar file in the URL shown in the mainApplicationFile line of streamprocessor.yaml:
+# $ scp target/StreamProcessing-1.0-SNAPSHOT.jar lx.pd.infn.it:public_html/
+# launch the spark application:
 kubectl apply -f streamprocessor.yaml
 #
 # check the status:
