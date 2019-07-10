@@ -25,7 +25,7 @@ OS_PASSWORD: <your_password>
 # Set the user key pair
 # Create a new key pair with the user public key if specified
 # To generate the keys use: ssh-keygen -t rsa -f cloud.key (without password)
-# If your key is already available in OpenStack, just set its name in OS_KEY_NAME and leave empty the other vars 
+# If your key is already available in OpenStack, just set its name in OS_KEY_NAME and the private key filename in OS_KEY_PRIVATE   
 OS_KEY_NAME: my_key
 OS_KEY_PUBLIC: cloud.key.pub
 OS_KEY_PRIVATE: cloud.key
