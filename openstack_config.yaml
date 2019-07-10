@@ -1,21 +1,21 @@
-# Set the OS authentication
-OS_AUTH_URL: https://egi-cloud.pd.infn.it:443/v3
+# Set the OS authentication (do not change if using CloudVeneto)
+OS_AUTH_URL:  https://cloud-areapd.pd.infn.it:5000/v3
 OS_IDENTITY_API_VERSION: 3
-OS_REGION_NAME: RegionOne
+OS_REGION_NAME: regionOne
 OS_INTERFACE: public
-OS_CACERT: ../egi-cloud.pem
+OS_CACERT: /etc/pki/tls/certs/ca-bundle.crt
 OS_SECURITY_GROUP: K8S-SG
 
 # The OS authentication type (password | token)
-OS_AUTH_TYPE: token
+OS_AUTH_TYPE: password
 
 # The OS user credential using OS_AUTH_TYPE: password
-OS_USERNAME:
-OS_PASSWORD:
+OS_USERNAME: <your_username>
+OS_PASSWORD: <your_password>
 
 # The OS user credential using OS_AUTH_TYPE: token
 # VOMS_PROXY and EGI_CHECKIN are mutually exclusive.
-VOMS_PROXY: /tmp/x509up_u1000
+#VOMS_PROXY: /tmp/x509up_u1000
 
 #EGI_CHECKIN_URL: https://aai.egi.eu
 #EGI_CHECKIN_CLIENT_ID: 
@@ -25,29 +25,30 @@ VOMS_PROXY: /tmp/x509up_u1000
 # Set the user key pair
 # Create a new key pair with the user public key if specified
 # To generate the keys use: ssh-keygen -t rsa -f cloud.key (without password)
+# If your key is already available in OpenStack, just set its name in OS_KEY_NAME and leave empty the other vars 
 OS_KEY_NAME: my_key
 OS_KEY_PUBLIC: cloud.key.pub
 OS_KEY_PRIVATE: cloud.key
 
-# Set the project
-OS_PROJECT_NAME: VO:enmr.eu
-OS_PROJECT_ID: ecd4227c23fd4c85b833a1c7e58cfbba
+# Set the project (pre-defined values below are for CMS project)
+OS_PROJECT_NAME: CMS
+OS_PROJECT_ID: d27fe2becea94a3e980fb9f66e2f291a
 OS_PROJECT_DOMAIN_NAME: default
 OS_USER_DOMAIN_NAME: default
-OS_NETWORK: int-enmr.eu
+OS_NETWORK: CMS-lan
 
-# Set the public IP address (automatic or pre-allocated)
-OS_FIP: auto
+# Set the public IP address (auto | IPv4 address), not necessary for CloudVeneto
+#OS_FIP: auto
 
 # Set the name, image and flavor of the K8S master
 OS_MASTER_NAME: master
-OS_MASTER_IMAGE: f9da2ff6-292a-4f43-9041-6f6d3cfec6fc
-OS_MASTER_FLAVOR: m1.large
+OS_MASTER_IMAGE: ubuntu_18.04
+OS_MASTER_FLAVOR: cloudveneto.8cores8GB25GB
 
 # Set the name, image and flavor of the K8S nodes
 OS_NODE_NAME: node
-OS_NODE_IMAGE: f9da2ff6-292a-4f43-9041-6f6d3cfec6fc
-OS_NODE_FLAVOR: m1.large
+OS_NODE_IMAGE: ubuntu_18.04
+OS_NODE_FLAVOR: cloudveneto.8cores8GB25GB
 
 # Set the number of K8S nodes to create
-OS_NODES: 1
+OS_NODES: 2
