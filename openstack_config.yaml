@@ -13,14 +13,14 @@ OS_AUTH_TYPE: password
 OS_USERNAME: <your_username>
 OS_PASSWORD: <your_password>
 
-# The OS user credential using OS_AUTH_TYPE: token
+# The OS user credential using OS_AUTH_TYPE: token (good for use with EGI Federated cloud)
 # VOMS_PROXY and EGI_CHECKIN are mutually exclusive.
-#VOMS_PROXY: /tmp/x509up_u1000
+#VOMS_PROXY: <your-proxy-filename> (e.g. /tmp/x509up_u1000)
 
 #EGI_CHECKIN_URL: https://aai.egi.eu
-#EGI_CHECKIN_CLIENT_ID: 
-#EGI_CHECKIN_CLIENT_SECRET:
-#EGI_CHECKIN_REFRESH_TOKEN:
+#EGI_CHECKIN_CLIENT_ID: <your-client-id> (taken from https://aai.egi.eu/fedcloud)
+#EGI_CHECKIN_CLIENT_SECRET: <your-client-secret> (taken from https://aai.egi.eu/fedcloud)
+#EGI_CHECKIN_REFRESH_TOKEN: <your-refresh-token> (taken from https://aai.egi.eu/fedcloud)
 
 # Set the user key pair
 # Create a new key pair with the user public key if specified
@@ -30,7 +30,7 @@ OS_KEY_NAME: my_key
 OS_KEY_PUBLIC: cloud.key.pub
 OS_KEY_PRIVATE: cloud.key
 
-# Set the project (pre-defined values below are for CMS project)
+# Set the project (pre-defined values below are for CMS project, change them according with your project)
 OS_PROJECT_NAME: CMS
 OS_PROJECT_ID: d27fe2becea94a3e980fb9f66e2f291a
 OS_PROJECT_DOMAIN_NAME: default
@@ -41,13 +41,13 @@ OS_NETWORK: CMS-lan
 #OS_FIP: auto
 
 # Set the name, image and flavor of the K8S master
-OS_MASTER_NAME: master
-OS_MASTER_IMAGE: ubuntu_18.04
+OS_MASTER_NAME: <choose-a-master-name>
+OS_MASTER_IMAGE: Ubuntu-bionic-server
 OS_MASTER_FLAVOR: cloudveneto.8cores8GB25GB
 
-# Set the name, image and flavor of the K8S nodes
-OS_NODE_NAME: node
-OS_NODE_IMAGE: ubuntu_18.04
+# Set the name, image and flavor of the K8S nodes (image and flavor defaults below are good)
+OS_NODE_NAME: <choose-a-node-name-prefix>
+OS_NODE_IMAGE: Ubuntu-bionic-server
 OS_NODE_FLAVOR: cloudveneto.8cores8GB25GB
 
 # Set the number of K8S nodes to create
