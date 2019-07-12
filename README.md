@@ -1,4 +1,4 @@
-# Deployment of a Kubernetes cluster via ansible
+# Deployment of a Kubernetes cluster via Ansible
 
 ## Overview
 The provided Ansible playbooks allow you to deploy a Kubernetes cluster both on bare metal and on an OpenStack cloud.
@@ -10,9 +10,9 @@ The playbooks enrich the cluster installation with a set of services such as:
 
 ## System requirements
 The deployment environment requires:
-- Ansible 2.5.0+
-- Ubuntu 18.04
-- Master and nodes must have passwordless SSH access
+- Ansible 2.5.0+ (on the user client)
+- Ubuntu 18.04 (for master and nodes)
+- at least 2 CPUs and 4 GB of RAM for the master
 
 ## Getting Started
 This section represents a quick installation and is not intended to teach you about all the components. The easiest way to get started is to clone the 'ansible-k8s' repository:
@@ -173,7 +173,9 @@ To do it, edit the file openstack_config.yaml and fill up all required attribute
 
 Three authentication/authorization methods are available: OpenStack username/password, EGI Check-in and VOMS proxy. The last two works for cloud resources where respectively EGI Check-in and VOMS support are enabled via OS-FEDERATION. For each case, the required attributes are described in the openstack_config.yaml file. If your TLS CA certificate bundle fails, use the tls-ca-bundle.pem file in ansible-k8s/config/, that is the CA certificate required by both the CloudVeneto cloud and the INFN-PADOVA-STACK FedCloud site.
 
-Moreover, please define the VMs characteristics of the master and nodes, in terms of name, flavor, and image. Finally, specify the number of nodes (i.e. OS_NODES) is expected to be composed of your cluster.
+Moreover, you can define the VMs characteristics of the master and nodes, in terms of name, flavor, and image. Finally, specify the number of nodes (i.e. OS_NODES) requested for your cluster. 
+
+For a more complete description look at the comments of the openstack_config.yaml file.
 
 Verify if the 'shade' Python module is available on your environment, otherwise install it:
 
@@ -198,7 +200,8 @@ There are two different ways to access the Kubernetes cluster: by the kubectl or
 The kubectl command line tool is available on the master node. If you wish to access the cluster remotely please see the following guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/.
 
 In case of Kubernetes has been deployed on OpenStack, you can enable your local kubectl to access the cluster through the Keystone authentication. To do it, copy all files contained into the folder ansible-k8s/config/ to $HOME/.kube/. Do not forget to source the openrc.sh with your Openstack credentials (the same used in the openstack_config.yaml file above) and OS_CACERT variable set.
-Edit $HOME/.kube/config and set the IP address of your new K8S master.
+
+The only manual configuration required is to edit $HOME/.kube/config and set the IP address of your new K8S master.
 
 To allow other users to access your K8S cluster and operate on a subset of its resources, edit the auth-policy file with:
 ```
