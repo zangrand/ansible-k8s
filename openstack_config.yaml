@@ -4,6 +4,7 @@ OS_IDENTITY_API_VERSION: 3
 OS_REGION_NAME: regionOne
 OS_INTERFACE: public
 OS_CACERT: /etc/pki/tls/certs/ca-bundle.crt
+# change the value below only if you want to use an already existing security group
 OS_SECURITY_GROUP: K8S-SG
 
 # The OS authentication type (password | token)
@@ -40,15 +41,17 @@ OS_NETWORK: CMS-lan
 # Set the public IP address (auto | IPv4 address), not necessary for CloudVeneto
 #OS_FIP: auto
 
-# Set the name, image and flavor of the K8S master
+# Set the name, image and flavor of the K8S master (image and flavor defaults below are a good start):
+# a flavor with a minumum of 2 VCPUs and 4 GB of VRAM is required for the master
+# be sure to choose a master VM name unique within your project 
 OS_MASTER_NAME: <choose-a-master-name>
 OS_MASTER_IMAGE: Ubuntu-bionic-server
-OS_MASTER_FLAVOR: cloudveneto.8cores8GB25GB
+OS_MASTER_FLAVOR: cloudveneto.medium
 
-# Set the name, image and flavor of the K8S nodes (image and flavor defaults below are good)
+# Set the name, image and flavor of the K8S nodes (image and flavor defaults below are a good start)
 OS_NODE_NAME: <choose-a-node-name-prefix>
 OS_NODE_IMAGE: Ubuntu-bionic-server
-OS_NODE_FLAVOR: cloudveneto.8cores8GB25GB
+OS_NODE_FLAVOR: cloudveneto.large
 
-# Set the number of K8S nodes to create
-OS_NODES: 2
+# Set the number of K8S nodes to create (with 3 nodes and defaults above you'll have a cluster with 12 VCPUs)
+OS_NODES: 3
