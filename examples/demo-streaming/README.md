@@ -8,6 +8,10 @@ The relevant K8s commands are in demo.sh file. You just need to replace in strea
 your StreamProcessing-1.0-SNAPSHOT.jar link, after having rebuild it with the right Kafka broker IP:port hardcoded:
 ```
 git clone https://github.com/Mmiglio/binaryStream
+# get K8s master IP:
+IP=$(kubectl get node master -o=jsonpath='{.status.addresses[0].address}')
+# get Kafka bootstrap port:
+port=$(kubectl get service smactcluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}')
 vi binaryStream/src/main/scala/ch/cern/KafkaClientProperties.scala
 # put val broker = "IP:port" here
 cd binaryStream
