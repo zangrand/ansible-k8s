@@ -58,6 +58,17 @@
   retries: 5
   delay: 2
 
+- name: Extend the token timeout of the kubernetes dashboard
+  when: init_cluster and started_kubelet and enable_dashboard
+  command: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \
+        patch deployment kubernetes-dashboard --namespace=kube-system --type=json \
+        --patch='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": ["--auto-generate-certificates","--token-ttl=0"]}]'
+  register: create_result
+  until: create_result.rc == 0
+  retries: 5
+  delay: 2
+
 - name: Setup the kubernetes dashboard
   when: init_cluster and started_kubelet and enable_dashboard
   command: |
