@@ -42,7 +42,7 @@ spec:
     - --authorization-webhook-config-file=/etc/kubernetes/pki/webhookconfig.yaml
     - --authorization-webhook-cache-unauthorized-ttl=5m
     - --authorization-webhook-cache-authorized-ttl=5m
-    image: k8s.gcr.io/kube-apiserver:v1.14.1
+    image: k8s.gcr.io/kube-apiserver:v1.15.3
     imagePullPolicy: IfNotPresent
     livenessProbe:
       failureThreshold: 8
