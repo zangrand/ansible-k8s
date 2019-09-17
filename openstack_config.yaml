@@ -1,5 +1,5 @@
 # Set the OS authentication (do not change if using CloudVeneto)
-OS_AUTH_URL:  https://cloud-areapd.pd.infn.it:5000/v3
+OS_AUTH_URL: https://keystone-cv.pd.infn.it/v3
 OS_IDENTITY_API_VERSION: 3
 OS_REGION_NAME: regionOne
 OS_INTERFACE: public
