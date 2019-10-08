@@ -3,12 +3,12 @@
 - name: Install kafka operator
   vars:
     projectns: default
-    strimziver: 0.11.1
+    strimziver: 0.14.0
   become: no
   block:
     - unarchive:
         remote_src: yes
-        src: http://artifacts.pd.infn.it/packages/SMACT/misc/strimzi-{{ strimziver }}.tar.gz
+        src: https://github.com/strimzi/strimzi-kafka-operator/releases/download/{{ strimziver }}/strimzi-{{ strimziver }}.tar.gz
         dest: ./
     - find:
         paths: ./strimzi-{{ strimziver }}/install/cluster-operator
