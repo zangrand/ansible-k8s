@@ -11,7 +11,7 @@
 - name: Deploy the Spark operator
   when: init_cluster and started_kubelet
   command: |
-    kubectl --kubeconfig={{ kubeadmin_config }} apply -f {{ item }}
+    kubectl --validate=false --kubeconfig={{ kubeadmin_config }} apply -f {{ item }}
   with_items:
      - "spark-on-k8s-operator/manifest/spark-rbac.yaml"
      - "spark-on-k8s-operator/manifest/spark-operator-rbac.yaml"
