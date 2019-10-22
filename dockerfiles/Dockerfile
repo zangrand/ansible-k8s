@@ -13,4 +13,6 @@ RUN pip install shade
 COPY ./ansible-k8s ./ansible-k8s
 COPY ./entrypoint.sh ./entrypoint.sh
 
+RUN chmod ugo+x ./entrypoint.sh
+
 ENTRYPOINT ./entrypoint.sh
