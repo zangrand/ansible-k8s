@@ -9,6 +9,6 @@
 - name: install basic packages
   package:
     name: ['python-yaml', 'git', 'apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common', 'nfs-common']
-    state: present
+    state: latest
   become: yes
   become_method: sudo
