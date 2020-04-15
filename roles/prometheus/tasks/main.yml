@@ -22,7 +22,17 @@
     url: https://raw.githubusercontent.com/zangrand/ansible-k8s/master/k8s/prometheus-service.yaml
     dest: kube-prometheus/manifests/
 
-- name: Deploy Prometheus
+- name: Deploy Prometheus CRD
+  when: init_cluster and started_kubelet
+  command: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \
+        apply -f kube-prometheus/manifests/setup
+  register: create_result
+  until: create_result.rc == 0
+  retries: 5
+  delay: 5
+
+- name: Deploy Prometheus services
   when: init_cluster and started_kubelet
   command: |
     kubectl --kubeconfig={{ kubeadmin_config }} \
@@ -30,5 +40,4 @@
   register: create_result
   until: create_result.rc == 0
   retries: 5
-  delay: 2
 
