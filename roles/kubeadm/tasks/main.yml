@@ -26,8 +26,8 @@
   apt:
     name: "{{ packages }}"
     update_cache: yes
-    dpkg_options: "force-downgrade"
-    force: yes
+#    dpkg_options: "force-downgrade"
+#    force: yes
   vars:
     packages:
       - kubelet
