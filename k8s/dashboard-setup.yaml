@@ -10,7 +10,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: kubernetes-dashboard
-  namespace: kube-system
+  namespace: kubernetes-dashboard
 ---
 kind: Service
 apiVersion: v1
@@ -18,7 +18,7 @@ metadata:
   labels:
     k8s-app: kubernetes-dashboard
   name: kubernetes-dashboard
-  namespace: kube-system
+  namespace: kubernetes-dashboard
 spec:
   type: NodePort
   ports:
