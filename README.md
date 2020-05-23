@@ -220,7 +220,7 @@ The cluster exposes the following dashboards:
 To login into the K8S dashboard use the token of the kube-system:default service account. To get it, execute the following command at the master node:
 
 ```
-# kubectl -n kube-system describe secret kubernetes-dashboard
+# kubectl -n kubernetes-dashboard describe secret kubernetes-dashboard
 ...
 Data
 ====
