@@ -12,3 +12,8 @@
     state: latest
   become: yes
   become_method: sudo
+  
+- name: Install "helm" with option --classic
+  snap:
+    name: helm
+    classic: yes
