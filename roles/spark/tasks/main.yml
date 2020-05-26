@@ -1,21 +1,21 @@
 ---
 
-- name: Clone spark-on-k8s-operator repo
-  become: no
-  git:
-    repo: https://github.com/GoogleCloudPlatform/spark-on-k8s-operator.git
-    dest: ./spark-on-k8s-operator
-    update: yes
-    force: yes
+- name: Create the Spark operator namespace
+  when: init_cluster and started_kubelet
+  command: |
+    kubectl --kubeconfig={{ kubeadmin_config }} create namespace spark-operator
+  register: create_result
+  until: create_result.rc == 0
+  retries: 5
+  delay: 2
 
 - name: Deploy the Spark operator
   when: init_cluster and started_kubelet
   command: |
-    kubectl --validate=false --kubeconfig={{ kubeadmin_config }} apply -f {{ item }}
+    helm --kubeconfig={{ kubeadmin_config }} {{ item }} 
   with_items:
-     - "spark-on-k8s-operator/manifest/spark-rbac.yaml"
-     - "spark-on-k8s-operator/manifest/spark-operator-rbac.yaml"
-     - "spark-on-k8s-operator/manifest/spark-operator-with-metrics.yaml"
+     - "repo add incubator http://storage.googleapis.com/kubernetes-charts-incubator"
+     - "install sparkoperator incubator/sparkoperator --namespace spark-operator --set sparkJobNamespace=default"
   register: create_result
   until: create_result.rc == 0
   retries: 5
