@@ -52,7 +52,7 @@
   when: init_cluster and started_kubelet and enable_dashboard
   command: |
     kubectl --kubeconfig={{ kubeadmin_config }} \
-        apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
+        apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.1/aio/deploy/recommended.yaml
   register: create_result
   until: create_result.rc == 0
   retries: 5
@@ -62,8 +62,8 @@
   when: init_cluster and started_kubelet and enable_dashboard
   command: |
     kubectl --kubeconfig={{ kubeadmin_config }} \
-        patch deployment kubernetes-dashboard --namespace=kube-system --type=json \
-        --patch='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": ["--auto-generate-certificates","--token-ttl=0"]}]'
+        patch deployment kubernetes-dashboard --namespace=kubernetes-dashboard --type=json \
+        --patch='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": ["--auto-generate-certificates","--namespace=kubernetes-dashboard","--token-ttl=0"]}]'
   register: create_result
   until: create_result.rc == 0
   retries: 5
